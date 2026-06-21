@@ -72,7 +72,7 @@
       0 0 0 1px rgba(255,255,255,0.02) inset,
       0 0 26px -6px var(--glow),
       0 20px 60px -20px rgba(0,0,0,0.8);
-    will-change: transform;
+    will-change: transform, box-shadow, border-color;
   }
 
   .card.hovered {
@@ -95,6 +95,8 @@
     border: 1px solid var(--line-strong);
     padding: 4px;
     transition: box-shadow 0.3s ease-out;
+    will-change: box-shadow;
+    transform: translateZ(0);
   }
 
   .card.hovered .avatar-ring {
@@ -180,13 +182,14 @@
     border: 1px solid var(--line);
     border-radius: 14px;
     text-decoration: none;
-    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
   }
 
   .discord-widget:hover {
     border-color: var(--line-strong);
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.06);
     transform: translateY(-1px);
+    box-shadow: 0 0 22px -4px var(--glow-strong);
   }
 
   .discord-icon {
@@ -243,17 +246,6 @@
     background: #888;
     display: inline-block;
     flex-shrink: 0;
-  }
-
-  .discord-join {
-    flex-shrink: 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--bg);
-    background: var(--text);
-    padding: 6px 14px;
-    border-radius: 8px;
-    letter-spacing: 0.02em;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -473,7 +465,6 @@
             <span id="discord-stats-text">connecting</span>
           </div>
         </div>
-        <span class="discord-join">join</span>
       </a>
     </div>
   </div>
@@ -583,30 +574,30 @@
     const widgetEl = document.getElementById('discord-widget');
     const iconEl = document.getElementById('discord-icon');
 
+    const inviteCode = (manualInviteOverride || widgetEl.href || '')
+      .split('/').filter(Boolean).pop();
+
     try {
-      const res = await fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/widget.json`);
-      if (!res.ok) throw new Error('widget fetch failed');
+      if (!inviteCode) throw new Error('no invite code available');
+
+      const res = await fetch(`https://discord.com/api/v9/invites/${inviteCode}?with_counts=true`);
+      if (!res.ok) throw new Error('invite fetch failed');
       const data = await res.json();
 
-      nameEl.textContent = data.name || 'discord server';
-      const onlineCount = data.presence_count ?? 0;
-      statsEl.textContent = `${onlineCount} online`;
+      const guild = data.guild || {};
+      nameEl.textContent = guild.name || 'discord server';
+
+      const onlineCount = data.approximate_presence_count ?? 0;
+      const memberCount = data.approximate_member_count ?? 0;
+      statsEl.textContent = `${onlineCount} online · ${memberCount} members`;
       dotEl.style.background = onlineCount > 0 ? '#fff' : '#555';
 
-      if (data.instant_invite && !manualInviteOverride) {
-        widgetEl.href = data.instant_invite;
-      }
-
-      if (data.icon) {
-        const guildIcon = data.id && data.icon
-          ? `https://cdn.discordapp.com/icons/${data.id}/${data.icon}.png`
-          : null;
-        if (guildIcon) {
-          iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
-        }
+      if (guild.id && guild.icon) {
+        const guildIcon = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`;
+        iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
       }
     } catch (err) {
-      nameEl.textContent = 'join the server';
+      nameEl.textContent = 'server';
       statsEl.textContent = 'click to join';
       dotEl.style.background = '#555';
     }
