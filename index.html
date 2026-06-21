@@ -293,6 +293,132 @@
       display: none;
     }
   }
+
+  .admin-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .admin-overlay.visible {
+    display: flex;
+  }
+
+  .admin-box {
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 0 40px -2px var(--glow-strong);
+  }
+
+  .admin-box h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    margin: 0 0 14px;
+    color: var(--text);
+  }
+
+  .admin-box input[type="password"],
+  .admin-panel input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    padding: 9px 11px;
+    margin-bottom: 10px;
+    outline: none;
+  }
+
+  .admin-box input[type="password"]:focus,
+  .admin-panel input[type="text"]:focus {
+    border-color: var(--line-strong);
+  }
+
+  .admin-btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .admin-btn {
+    flex: 1;
+    padding: 9px 0;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  .admin-btn:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: var(--line-strong);
+  }
+
+  .admin-btn.primary {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+  }
+
+  .admin-btn.primary:hover {
+    opacity: 0.85;
+  }
+
+  .admin-error {
+    font-size: 12px;
+    color: #d98a8a;
+    margin: -4px 0 10px;
+    display: none;
+  }
+
+  .admin-panel {
+    max-width: 420px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .admin-panel label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 14px 0 4px;
+  }
+
+  .admin-panel label:first-of-type {
+    margin-top: 0;
+  }
+
+  .admin-section-title {
+    font-size: 12px;
+    color: var(--text-dimmer);
+    margin: 18px 0 2px;
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+  }
+
+  .admin-section-title:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
 </style>
 </head>
 <body>
@@ -306,23 +432,23 @@
       <h1 class="name">satori</h1>
 
       <div class="links">
-        <a class="link-item" href="https://www.twitch.tv/satxris" target="_blank" rel="noopener">
+        <a class="link-item" href="https://www.twitch.tv/satxris" target="_blank" rel="noopener" id="link-twitch">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.64 5.93H13.07V10.21H11.64M15.57 5.93H17V10.21H15.57M7 2L3.43 5.57V18.43H7.71V22L11.29 18.43H14.14L20.57 12V2M19.14 11.29L16.29 14.14H13.43L10.93 16.64V14.14H7.71V3.43H19.14Z"/></svg>
           <span class="link-label">Twitch</span>
         </a>
-        <a class="link-item" href="https://x.com/whossatori" target="_blank" rel="noopener">
+        <a class="link-item" href="https://x.com/whossatori" target="_blank" rel="noopener" id="link-twitter">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
           <span class="link-label">Twitter</span>
         </a>
-        <a class="link-item" href="https://www.tiktok.com/@whossatorii" target="_blank" rel="noopener">
+        <a class="link-item" href="https://www.tiktok.com/@whossatorii" target="_blank" rel="noopener" id="link-tiktok">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6c0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64c0 3.33 2.76 5.7 5.69 5.7c3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.32 1.39V7.3s-1.88.09-3.26-1.48z"/></svg>
           <span class="link-label">TikTok</span>
         </a>
-        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener">
+        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener" id="link-throne">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.5 18.5 20 18 20H6C5.5 20 5 19.5 5 19V18H19V19Z"/></svg>
           <span class="link-label">Throne</span>
         </a>
-        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener">
+        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener" id="link-tips">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
           <span class="link-label">Tips</span>
         </a>
@@ -346,6 +472,52 @@
 </div>
 
 <div class="bonsai-corner" id="bonsai" aria-hidden="true"></div>
+
+<div class="admin-overlay" id="password-overlay">
+  <div class="admin-box">
+    <h2>enter password</h2>
+    <input type="password" id="password-input" autocomplete="off" placeholder="password">
+    <p class="admin-error" id="password-error">incorrect password</p>
+    <div class="admin-btn-row">
+      <button class="admin-btn" id="password-cancel">cancel</button>
+      <button class="admin-btn primary" id="password-submit">unlock</button>
+    </div>
+  </div>
+</div>
+
+<div class="admin-overlay" id="admin-overlay">
+  <div class="admin-box admin-panel">
+    <h2>site editor</h2>
+
+    <p class="admin-section-title">profile</p>
+    <label for="edit-avatar">avatar image url</label>
+    <input type="text" id="edit-avatar" placeholder="https://...">
+
+    <p class="admin-section-title">links</p>
+    <label for="edit-twitch">twitch url</label>
+    <input type="text" id="edit-twitch">
+    <label for="edit-twitter">twitter url</label>
+    <input type="text" id="edit-twitter">
+    <label for="edit-tiktok">tiktok url</label>
+    <input type="text" id="edit-tiktok">
+    <label for="edit-throne">throne url</label>
+    <input type="text" id="edit-throne">
+    <label for="edit-tips">tips url</label>
+    <input type="text" id="edit-tips">
+
+    <p class="admin-section-title">discord</p>
+    <label for="edit-discord-id">server id</label>
+    <input type="text" id="edit-discord-id">
+
+    <div class="admin-btn-row">
+      <button class="admin-btn" id="admin-close">close</button>
+      <button class="admin-btn primary" id="admin-apply">apply preview</button>
+    </div>
+    <div class="admin-btn-row">
+      <button class="admin-btn primary" id="admin-download" style="width:100%;">download updated site</button>
+    </div>
+  </div>
+</div>
 
 <script>
   const card = document.getElementById('card');
@@ -385,7 +557,7 @@
   }
 
   // Discord live widget data
-  const DISCORD_SERVER_ID = '1362914541369037060';
+  let DISCORD_SERVER_ID = '1362914541369037060';
 
   async function loadDiscordWidget() {
     const nameEl = document.getElementById('discord-name');
@@ -634,6 +806,180 @@
   }
 
   startGrowth();
+
+  // ---------------------------------------------------------------
+  // Hidden admin panel
+  // Trigger sequence: w w s s a d a d s a t o
+  // Change ADMIN_PASSWORD below to set your real password.
+  // ---------------------------------------------------------------
+
+  const ADMIN_PASSWORD = 'reg_is_dumb';
+  const TRIGGER_SEQUENCE = ['w','w','s','s','a','d','a','d','s','a','t','o'];
+  let keyBuffer = [];
+
+  document.addEventListener('keydown', (e) => {
+    // ignore keystrokes while typing into an input/textarea
+    const tag = document.activeElement.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+    const key = e.key.toLowerCase();
+    keyBuffer.push(key);
+    if (keyBuffer.length > TRIGGER_SEQUENCE.length) keyBuffer.shift();
+
+    if (keyBuffer.length === TRIGGER_SEQUENCE.length &&
+        keyBuffer.every((k, i) => k === TRIGGER_SEQUENCE[i])) {
+      keyBuffer = [];
+      openPasswordPrompt();
+    }
+  });
+
+  const passwordOverlay = document.getElementById('password-overlay');
+  const passwordInput = document.getElementById('password-input');
+  const passwordError = document.getElementById('password-error');
+  const adminOverlay = document.getElementById('admin-overlay');
+
+  function openPasswordPrompt() {
+    passwordInput.value = '';
+    passwordError.style.display = 'none';
+    passwordOverlay.classList.add('visible');
+    setTimeout(() => passwordInput.focus(), 50);
+  }
+
+  function closePasswordPrompt() {
+    passwordOverlay.classList.remove('visible');
+  }
+
+  document.getElementById('password-cancel').addEventListener('click', closePasswordPrompt);
+
+  function submitPassword() {
+    if (passwordInput.value === ADMIN_PASSWORD) {
+      closePasswordPrompt();
+      openAdminPanel();
+    } else {
+      passwordError.style.display = 'block';
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  }
+
+  document.getElementById('password-submit').addEventListener('click', submitPassword);
+  passwordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitPassword();
+    if (e.key === 'Escape') closePasswordPrompt();
+  });
+
+  function openAdminPanel() {
+    document.getElementById('edit-avatar').value =
+      document.getElementById('avatar').dataset.imgUrl || '';
+    document.getElementById('edit-twitch').value = document.getElementById('link-twitch').href;
+    document.getElementById('edit-twitter').value = document.getElementById('link-twitter').href;
+    document.getElementById('edit-tiktok').value = document.getElementById('link-tiktok').href;
+    document.getElementById('edit-throne').value = document.getElementById('link-throne').href;
+    document.getElementById('edit-tips').value = document.getElementById('link-tips').href;
+    document.getElementById('edit-discord-id').value = DISCORD_SERVER_ID;
+    adminOverlay.classList.add('visible');
+  }
+
+  document.getElementById('admin-close').addEventListener('click', () => {
+    adminOverlay.classList.remove('visible');
+  });
+
+  function applyAdminChanges() {
+    const avatarUrl = document.getElementById('edit-avatar').value.trim();
+    const avatarEl = document.getElementById('avatar');
+    if (avatarUrl) {
+      avatarEl.innerHTML = `<img src="${avatarUrl}" alt="">`;
+      avatarEl.dataset.imgUrl = avatarUrl;
+    } else {
+      avatarEl.innerHTML = 'satori';
+      avatarEl.dataset.imgUrl = 'https://segs.lol/IEPPV1.png';
+    }
+
+    document.getElementById('link-twitch').href = document.getElementById('edit-twitch').value.trim();
+    document.getElementById('link-twitter').href = document.getElementById('edit-twitter').value.trim();
+    document.getElementById('link-tiktok').href = document.getElementById('edit-tiktok').value.trim();
+    document.getElementById('link-throne').href = document.getElementById('edit-throne').value.trim();
+    document.getElementById('link-tips').href = document.getElementById('edit-tips').value.trim();
+
+    const newServerId = document.getElementById('edit-discord-id').value.trim();
+    if (newServerId && newServerId !== DISCORD_SERVER_ID) {
+      DISCORD_SERVER_ID = newServerId;
+      loadDiscordWidget();
+    }
+  }
+
+  document.getElementById('admin-apply').addEventListener('click', applyAdminChanges);
+
+  async function downloadUpdatedSite() {
+    applyAdminChanges();
+
+    if (window.location.protocol === 'file:') {
+      alert('Export only works when the site is served over http/https (e.g. your live satos.cc site or the pages.dev preview) — not when opening the file directly from disk. Open the deployed site, unlock the editor there, then download.');
+      return;
+    }
+
+    try {
+      const res = await fetch(window.location.href);
+      let html = await res.text();
+
+      const avatarUrl = document.getElementById('edit-avatar').value.trim();
+      const twitch = document.getElementById('edit-twitch').value.trim();
+      const twitter = document.getElementById('edit-twitter').value.trim();
+      const tiktok = document.getElementById('edit-tiktok').value.trim();
+      const throneUrl = document.getElementById('edit-throne').value.trim();
+      const tips = document.getElementById('edit-tips').value.trim();
+      const discordId = document.getElementById('edit-discord-id').value.trim();
+
+      // patch avatar block specifically
+      html = html.replace(
+        /<div class="avatar" id="avatar"[^>]*>[\s\S]*?<\/div>/,
+        avatarUrl
+          ? `<div class="avatar" id="avatar" data-img-url="${avatarUrl}"><img src="${avatarUrl}" alt=""></div>`
+          : `<div class="avatar" id="avatar">satori</div>`
+      );
+
+      function patchHref(id, newHref) {
+        if (!newHref) return;
+        const re = new RegExp(`(id="${id}"[^>]*href=")[^"]*(")`);
+        const re2 = new RegExp(`(href=")[^"]*("[^>]*id="${id}")`);
+        if (re.test(html)) {
+          html = html.replace(re, `$1${newHref}$2`);
+        } else if (re2.test(html)) {
+          html = html.replace(re2, `$1${newHref}$2`);
+        }
+      }
+
+      patchHref('link-twitch', twitch);
+      patchHref('link-twitter', twitter);
+      patchHref('link-tiktok', tiktok);
+      patchHref('link-throne', throneUrl);
+      patchHref('link-tips', tips);
+
+      if (discordId) {
+        html = html.replace(
+          /let DISCORD_SERVER_ID = '[^']*';/,
+          `let DISCORD_SERVER_ID = '${discordId}';`
+        );
+      }
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Could not fetch the page source to export. Try again, or check the console for details.');
+      console.error(err);
+    }
+  }
+
+  document.getElementById('admin-download').addEventListener('click', downloadUpdatedSite);
+
+
 
 </script>
 
