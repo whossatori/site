@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>satori</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --card: #111114;
+    --card-edge: #1c1c20;
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.22);
+    --glow: rgba(255,255,255,0.06);
+    --glow-strong: rgba(255,255,255,0.14);
+    --text: #f2f2f0;
+    --text-dim: #8a8a8f;
+    --text-dimmer: #55555c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+  }
+
+  /* subtle grain / noise floor so pure black doesn't look flat */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
+    pointer-events: none;
+  }
+
+  .stage {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .card {
+    position: relative;
+    background: linear-gradient(160deg, var(--card), #0d0d10);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 36px 28px 28px;
+    text-align: center;
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.02) inset,
+      0 0 26px -6px var(--glow),
+      0 20px 60px -20px rgba(0,0,0,0.8);
+    will-change: transform;
+  }
+
+  .card.hovered {
+    border-color: var(--line-strong);
+    box-shadow:
+      0 0 50px -2px var(--glow-strong),
+      0 0 0 1px rgba(255,255,255,0.04) inset,
+      0 25px 70px -20px rgba(0,0,0,0.9);
+  }
+
+  .card-inner {
+    transform: translateZ(20px);
+  }
+
+  .avatar-ring {
+    width: 92px;
+    height: 92px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    border: 1px solid var(--line-strong);
+    padding: 4px;
+    transition: box-shadow 0.3s ease-out;
+  }
+
+  .card.hovered .avatar-ring {
+    box-shadow: 0 0 24px -2px rgba(255,255,255,0.25);
+  }
+
+  .avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #1a1a1e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--text-dim);
+    overflow: hidden;
+  }
+
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 22px;
+    letter-spacing: 0.01em;
+    margin: 0 0 22px;
+  }
+
+  .links {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+
+  .link-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--text-dim);
+    padding: 10px 4px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+
+  .link-item:hover {
+    color: var(--text);
+    border-color: var(--line);
+    background: rgba(255,255,255,0.03);
+    transform: translateY(-2px);
+  }
+
+  .link-item svg {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+  }
+
+  .link-label {
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: inherit;
+    opacity: 0.75;
+    pointer-events: none;
+  }
+
+  .discord-widget {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+
+  .discord-widget:hover {
+    border-color: var(--line-strong);
+    background: rgba(255,255,255,0.05);
+    transform: translateY(-1px);
+  }
+
+  .discord-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: #1a1a1e;
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--text);
+    pointer-events: none;
+  }
+
+  .discord-icon svg,
+  .discord-icon img {
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+  }
+
+  .discord-info {
+    flex: 1;
+    text-align: left;
+    min-width: 0;
+    pointer-events: none;
+  }
+
+  .discord-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .discord-stats {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #888;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .discord-join {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--text);
+    padding: 6px 14px;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none !important; }
+  }
+
+  .bonsai-corner {
+    position: fixed;
+    bottom: 12px;
+    left: 80px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.1;
+    letter-spacing: 0;
+    color: var(--text-dimmer);
+    white-space: pre;
+    pointer-events: none;
+    user-select: none;
+    z-index: 5;
+    opacity: 0.85;
+    transition: opacity 0.6s ease-in-out;
+  }
+
+  .bonsai-corner .leaf {
+    color: #cfcfcf;
+  }
+
+  .bonsai-corner .trunk {
+    color: #8a8a8f;
+  }
+
+  .bonsai-corner .pot {
+    color: #6a6a6f;
+  }
+
+  @media (max-width: 480px) {
+    .bonsai-corner {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="card" id="card">
+    <div class="card-inner">
+      <div class="avatar-ring">
+        <div class="avatar" id="avatar">satori</div>
+      </div>
+      <h1 class="name">satori</h1>
+
+      <div class="links">
+        <a class="link-item" href="https://www.twitch.tv/satxris" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.64 5.93H13.07V10.21H11.64M15.57 5.93H17V10.21H15.57M7 2L3.43 5.57V18.43H7.71V22L11.29 18.43H14.14L20.57 12V2M19.14 11.29L16.29 14.14H13.43L10.93 16.64V14.14H7.71V3.43H19.14Z"/></svg>
+          <span class="link-label">Twitch</span>
+        </a>
+        <a class="link-item" href="https://x.com/whossatori" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span class="link-label">Twitter</span>
+        </a>
+        <a class="link-item" href="https://www.tiktok.com/@whossatorii" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6c0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64c0 3.33 2.76 5.7 5.69 5.7c3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.32 1.39V7.3s-1.88.09-3.26-1.48z"/></svg>
+          <span class="link-label">TikTok</span>
+        </a>
+        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.5 18.5 20 18 20H6C5.5 20 5 19.5 5 19V18H19V19Z"/></svg>
+          <span class="link-label">Throne</span>
+        </a>
+        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          <span class="link-label">Tips</span>
+        </a>
+      </div>
+
+      <a class="discord-widget" href="https://discord.gg/REPLACE_INVITE_CODE" target="_blank" rel="noopener" id="discord-widget">
+        <div class="discord-icon" id="discord-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.245.198.373.292a.077.077 0 0 1-.006.128a12.299 12.299 0 0 1-1.873.892a.076.076 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.876 19.876 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.955 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/></svg>
+        </div>
+        <div class="discord-info">
+          <p class="discord-name" id="discord-name">loading server...</p>
+          <div class="discord-stats">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="discord-stats-text">connecting</span>
+          </div>
+        </div>
+        <span class="discord-join">join</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="bonsai-corner" id="bonsai" aria-hidden="true"></div>
+
+<script>
+  const card = document.getElementById('card');
+  const stage = document.getElementById('stage');
+  const maxTilt = 10; // degrees
+  const maxLift = -6; // px translateY on hover
+
+  function handleMove(e) {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+
+    const dx = (x - cx) / cx;   // -1 to 1
+    const dy = (y - cy) / cy;   // -1 to 1
+
+    const rotateY = dx * maxTilt;
+    const rotateX = -dy * maxTilt;
+
+    card.style.transform =
+      `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${maxLift}px) scale(1.015)`;
+  }
+
+  function resetTilt() {
+    card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
+    card.classList.remove('hovered');
+  }
+
+  stage.addEventListener('mousemove', handleMove);
+  stage.addEventListener('mouseenter', () => card.classList.add('hovered'));
+  stage.addEventListener('mouseleave', resetTilt);
+
+  // touch devices: skip tilt, just keep it static
+  if (window.matchMedia('(hover: none)').matches) {
+    stage.removeEventListener('mousemove', handleMove);
+  }
+
+  // Discord live widget data
+  const DISCORD_SERVER_ID = '1362914541369037060';
+
+  async function loadDiscordWidget() {
+    const nameEl = document.getElementById('discord-name');
+    const statsEl = document.getElementById('discord-stats-text');
+    const dotEl = document.getElementById('status-dot');
+    const widgetEl = document.getElementById('discord-widget');
+    const iconEl = document.getElementById('discord-icon');
+
+    try {
+      const res = await fetch(`https://discord.com/api/guilds/${DISCORD_SERVER_ID}/widget.json`);
+      if (!res.ok) throw new Error('widget fetch failed');
+      const data = await res.json();
+
+      nameEl.textContent = data.name || 'discord server';
+      const onlineCount = data.presence_count ?? 0;
+      statsEl.textContent = `${onlineCount} online`;
+      dotEl.style.background = onlineCount > 0 ? '#fff' : '#555';
+
+      if (data.instant_invite) {
+        widgetEl.href = data.instant_invite;
+      }
+
+      if (data.icon) {
+        const guildIcon = data.id && data.icon
+          ? `https://cdn.discordapp.com/icons/${data.id}/${data.icon}.png`
+          : null;
+        if (guildIcon) {
+          iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
+        }
+      }
+    } catch (err) {
+      nameEl.textContent = 'join the server';
+      statsEl.textContent = 'click to join';
+      dotEl.style.background = '#555';
+    }
+  }
+
+  // Bonsai growth simulation — recursive branch algorithm modeled on cbonsai
+  // (jallbrit/cbonsai): a trunk grows upward with gentle wobble, throws off
+  // left/right shoots partway up, and any branch that runs out of life
+  // sprouts a cluster of leaves around its tip.
+
+  const bonsaiEl = document.getElementById('bonsai');
+
+  const GRID_W = 28;
+  const GRID_H = 14;
+  const BASE_LIFE = 24;
+
+  let grid, branches, rngSeed, growTimer;
+
+  function rand() {
+    rngSeed = (rngSeed * 9301 + 49297) % 233280;
+    return rngSeed / 233280;
+  }
+
+  function makeGrid() {
+    const g = [];
+    for (let y = 0; y < GRID_H; y++) g.push(new Array(GRID_W).fill(' '));
+    return g;
+  }
+
+  let leafCells = [];
+  let fallingLeaves = [];
+
+  function setCell(x, y, ch, cls) {
+    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
+    grid[y][x] = cls ? `<span class="${cls}">${ch}</span>` : ch;
+    if (cls === 'leaf') leafCells.push({ x, y });
+  }
+
+  const TRUNK = 0, SHOOT_LEFT = 1, SHOOT_RIGHT = 2;
+
+  function pushBranch(x, y, type, lifeLeft) {
+    branches.push({ x, y, type, life: lifeLeft, age: 0, shot: false });
+  }
+
+  function stepDirection(b) {
+    if (b.type === TRUNK) {
+      const wobbleChance = b.age < 4 ? 0.12 : 0.32;
+      const r = rand();
+      let dx = 0;
+      if (r < wobbleChance / 2) dx = -1;
+      else if (r < wobbleChance) dx = 1;
+      const ch = dx === 0 ? '|' : (dx < 0 ? '\\' : '/');
+      return { dx, dy: -1, ch };
+    } else if (b.type === SHOOT_LEFT) {
+      const dy = rand() < 0.4 ? -1 : 0;
+      return { dx: -1, dy, ch: dy < 0 ? '\\' : '_' };
+    } else {
+      const dy = rand() < 0.4 ? -1 : 0;
+      return { dx: 1, dy, ch: dy < 0 ? '/' : '_' };
+    }
+  }
+
+  function stepBranch(b) {
+    if (b.life <= 0) return;
+    b.age++;
+    b.life--;
+
+    const { dx, dy, ch } = stepDirection(b);
+
+    if (b.type === TRUNK && !b.shot && b.life > 6 && b.age >= 3) {
+      const forceChance = (b.age === 5 || b.age === 9) ? 0.8 : 0.15;
+      if (rand() < forceChance) {
+        pushBranch(b.x, b.y, rand() < 0.5 ? SHOOT_LEFT : SHOOT_RIGHT, Math.max(4, Math.floor(b.life * 0.65)));
+        b.shot = true;
+        if (rand() < 0.5) b.shot = false;
+      }
+    }
+
+    setCell(b.x, b.y, ch, 'trunk');
+
+    b.x += dx;
+    b.y += dy;
+
+    if (b.life <= 2 || b.y <= 1) {
+      const leafSpread = [[0,0],[-1,0],[1,0],[0,-1],[-1,-1],[1,-1],[0,1],[1,1],[-1,1]];
+      for (const [lx, ly] of leafSpread) {
+        if (rand() < 0.6) setCell(b.x + lx, b.y + ly, '&', 'leaf');
+      }
+    }
+  }
+
+  function initTree() {
+    rngSeed = (Date.now() % 100000) + 41;
+    grid = makeGrid();
+    branches = [];
+    leafCells = [];
+    fallingLeaves = [];
+    pushBranch(Math.floor(GRID_W / 2), GRID_H - 2, TRUNK, BASE_LIFE);
+    const potY = GRID_H - 1;
+    const potStr = ':' + '_'.repeat(GRID_W - 2) + ':';
+    for (let i = 0; i < potStr.length; i++) setCell(i, potY, potStr[i], 'pot');
+  }
+
+  function renderGrid() {
+    const composite = grid.map(row => row.slice());
+    for (const leaf of fallingLeaves) {
+      if (leaf.y >= 0 && leaf.y < GRID_H && leaf.x >= 0 && leaf.x < GRID_W) {
+        composite[leaf.y][leaf.x] = `<span class="leaf">&</span>`;
+      }
+    }
+    bonsaiEl.innerHTML = composite.map(row => row.join('')).join('\n');
+  }
+
+  function growStep() {
+    if (!branches.length) return false;
+    const stillAlive = [];
+    for (const b of branches) {
+      if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) {
+        stepBranch(b);
+        if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) stillAlive.push(b);
+      }
+    }
+    branches = stillAlive;
+    renderGrid();
+    return branches.length > 0;
+  }
+
+  const potRowY = () => GRID_H - 1;
+
+  function detachOneLeaf() {
+    if (!leafCells.length) return false;
+    const idx = Math.floor(rand() * leafCells.length);
+    const { x, y } = leafCells.splice(idx, 1)[0];
+    setCell(x, y, ' ', null);
+    fallingLeaves.push({ x, y, settleDelay: Math.floor(rand() * 3) });
+    renderGrid();
+    return true;
+  }
+
+  function tickFallingLeaves() {
+    if (!fallingLeaves.length) return false;
+    const stillFalling = [];
+    for (const leaf of fallingLeaves) {
+      if (leaf.settleDelay > 0) {
+        leaf.settleDelay--;
+        stillFalling.push(leaf);
+        continue;
+      }
+      const nextY = leaf.y + 1;
+      if (nextY >= potRowY()) {
+        // landed on the pot rim, leaf disappears
+        continue;
+      }
+      // gentle side drift while falling
+      let nextX = leaf.x;
+      const drift = rand();
+      if (drift < 0.18) nextX -= 1;
+      else if (drift < 0.36) nextX += 1;
+      nextX = Math.max(1, Math.min(GRID_W - 2, nextX));
+
+      leaf.x = nextX;
+      leaf.y = nextY;
+      stillFalling.push(leaf);
+    }
+    fallingLeaves = stillFalling;
+    renderGrid();
+    return fallingLeaves.length > 0 || leafCells.length > 0;
+  }
+
+  const GROW_STEP_MS = 3000;
+  const HOLD_AFTER_GROWTH_MS = 6000;
+  const PAUSE_BEFORE_REGROW_MS = 4000;
+
+  function runCycle() {
+    bonsaiEl.style.opacity = '0';
+    setTimeout(() => {
+      initTree();
+      renderGrid();
+      bonsaiEl.style.opacity = '0.85';
+
+      growTimer = setInterval(() => {
+        const stillGrowing = growStep();
+        if (!stillGrowing) {
+          clearInterval(growTimer);
+          setTimeout(startLeafFall, HOLD_AFTER_GROWTH_MS);
+        }
+      }, GROW_STEP_MS);
+    }, 500);
+  }
+
+  const LEAF_DETACH_INTERVAL_MS = 1400;
+  const LEAF_FALL_TICK_MS = 350;
+
+  let detachTimer, fallTimer;
+
+  function startLeafFall() {
+    detachTimer = setInterval(() => {
+      const detached = detachOneLeaf();
+      if (!detached) clearInterval(detachTimer);
+    }, LEAF_DETACH_INTERVAL_MS);
+
+    fallTimer = setInterval(() => {
+      const stillActive = tickFallingLeaves();
+      if (!stillActive) {
+        clearInterval(detachTimer);
+        clearInterval(fallTimer);
+        setTimeout(runCycle, PAUSE_BEFORE_REGROW_MS);
+      }
+    }, LEAF_FALL_TICK_MS);
+  }
+
+  function startGrowth() {
+    runCycle();
+  }
+
+  startGrowth();
+
+</script>
+
+</body>
+</html>
