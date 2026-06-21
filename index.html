@@ -392,33 +392,13 @@
     max-width: 420px;
     max-height: 80vh;
     overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--line-strong) transparent;
+    scrollbar-width: none;
   }
 
   .admin-panel::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .admin-panel::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .admin-panel::-webkit-scrollbar-thumb {
-    background-color: var(--line-strong);
-    border-radius: 8px;
-    border: 2px solid transparent;
-    background-clip: content-box;
-  }
-
-  .admin-panel::-webkit-scrollbar-thumb:hover {
-    background-color: var(--text-dim);
-  }
-
-  .admin-panel::-webkit-scrollbar-button {
     display: none;
-    height: 0;
     width: 0;
+    height: 0;
   }
 
   .admin-panel label {
