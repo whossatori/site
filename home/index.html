@@ -227,7 +227,6 @@
     min-height: 20px;
     transition: color 0.15s;
     overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
   }
@@ -262,27 +261,27 @@
         <li data-cmd="japan"  data-url="/jp">
           <span class="cmd-keyword">japan</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">travel & places</span>
+          <span class="cmd-desc">language</span>
         </li>
         <li data-cmd="github" data-url="/git">
           <span class="cmd-keyword">github</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">code & projects</span>
+          <span class="cmd-desc">projects</span>
         </li>
         <li data-cmd="anime"  data-url="/anime">
           <span class="cmd-keyword">anime</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">anime list</span>
+          <span class="cmd-desc">anilist</span>
         </li>
         <li data-cmd="movies" data-url="/movies">
           <span class="cmd-keyword">movies</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">film diary</span>
+          <span class="cmd-desc">ratings</span>
         </li>
         <li data-cmd="music"  data-url="/music">
           <span class="cmd-keyword">music</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">what i'm listening to</span>
+          <span class="cmd-desc">lastfm</span>
         </li>
       </ul>
 
@@ -336,6 +335,7 @@ document.addEventListener('keydown', (e) => {
   clearTimeout(clearTimer);
   clearTimer = setTimeout(resetBuffer, 1200);
   ghost.textContent = keyBuffer;
+  ghost.scrollLeft = ghost.scrollWidth;
 
   if (COMMANDS[keyBuffer]) { navigate(COMMANDS[keyBuffer]); return; }
 
