@@ -91,6 +91,13 @@
   }
 
   /* ── petal floor ── */
+  #bg-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
   #petal-floor {
     position: fixed;
     bottom: 0;
@@ -231,9 +238,11 @@
 </style>
 </head>
 <body>
+<div id="bg-layer" aria-hidden="true">
+  <div class="blossom-tree" id="blossom-tree"></div>
+  <div id="petal-floor"></div>
+</div>
 
-<div class="blossom-tree" id="blossom-tree" aria-hidden="true"></div>
-<div id="petal-floor" aria-hidden="true"></div>
 
 <div class="stage" id="stage">
   <div class="card" id="card">
