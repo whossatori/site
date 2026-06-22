@@ -95,6 +95,7 @@
     border-radius: 50%;
     border: 1px solid var(--line-strong);
     padding: 4px;
+    box-shadow: 0 0 12px -4px rgba(255,255,255,0.12);
     transition: box-shadow 0.3s ease-out;
   }
 
@@ -245,6 +246,18 @@
     background: #888;
     display: inline-block;
     flex-shrink: 0;
+  }
+
+  .discord-join {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bg);
+    background: var(--text);
+    padding: 6px 14px;
+    border-radius: 8px;
+    letter-spacing: 0.02em;
+    pointer-events: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -464,6 +477,7 @@
             <span id="discord-stats-text">connecting</span>
           </div>
         </div>
+        <span class="discord-join">join</span>
       </a>
     </div>
   </div>
@@ -566,12 +580,71 @@
   // instant_invite should not be allowed to overwrite it
   let manualInviteOverride = "https://discord.gg/KNcRAUFhv3";
 
+  const DISCORD_CACHE_KEY = 'discord_widget_cache_v1';
+  const DISCORD_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+  function readDiscordCache() {
+    try {
+      const raw = localStorage.getItem(DISCORD_CACHE_KEY);
+      if (!raw) return null;
+      const cached = JSON.parse(raw);
+      if (!cached || typeof cached.fetchedAt !== 'number') return null;
+      if (Date.now() - cached.fetchedAt > DISCORD_CACHE_TTL_MS) return null;
+      return cached.data || null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function writeDiscordCache(data) {
+    try {
+      localStorage.setItem(DISCORD_CACHE_KEY, JSON.stringify({
+        fetchedAt: Date.now(),
+        data,
+      }));
+    } catch (err) {
+      // localStorage unavailable (private mode, quota, etc) — fine to skip caching
+    }
+  }
+
+  function renderDiscordWidget(data) {
+    const nameEl = document.getElementById('discord-name');
+    const statsEl = document.getElementById('discord-stats-text');
+    const dotEl = document.getElementById('status-dot');
+    const iconEl = document.getElementById('discord-icon');
+
+    const guild = data.guild || {};
+    nameEl.textContent = guild.name || 'discord server';
+
+    const onlineCount = data.approximate_presence_count ?? 0;
+    const memberCount = data.approximate_member_count ?? 0;
+    statsEl.textContent = `${onlineCount} online · ${memberCount} members`;
+    dotEl.style.background = onlineCount > 0 ? '#fff' : '#555';
+
+    if (guild.id && guild.icon) {
+      // profile.icon_hash carries the "a_" prefix that marks an animated
+      // icon; guild.icon strips it, so check the prefixed version to
+      // decide whether to request the animated (gif) or static (png) asset
+      const profileHash = (data.profile && data.profile.icon_hash) || '';
+      const isAnimated = profileHash.startsWith('a_') || guild.icon.startsWith('a_');
+      const ext = isAnimated ? 'gif' : 'png';
+      const guildIcon = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${ext}`;
+      iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
+    }
+  }
+
   async function loadDiscordWidget() {
     const nameEl = document.getElementById('discord-name');
     const statsEl = document.getElementById('discord-stats-text');
     const dotEl = document.getElementById('status-dot');
     const widgetEl = document.getElementById('discord-widget');
-    const iconEl = document.getElementById('discord-icon');
+
+    // serve cached data immediately if it's still fresh, skip the network entirely
+    const cached = readDiscordCache();
+    if (cached) {
+      renderDiscordWidget(cached);
+      return;
+    }
 
     const inviteCode = (manualInviteOverride || widgetEl.href || '')
       .split('/').filter(Boolean).pop();
@@ -583,24 +656,8 @@
       if (!res.ok) throw new Error('invite fetch failed');
       const data = await res.json();
 
-      const guild = data.guild || {};
-      nameEl.textContent = guild.name || 'discord server';
-
-      const onlineCount = data.approximate_presence_count ?? 0;
-      const memberCount = data.approximate_member_count ?? 0;
-      statsEl.textContent = `${onlineCount} online · ${memberCount} members`;
-      dotEl.style.background = onlineCount > 0 ? '#fff' : '#555';
-
-      if (guild.id && guild.icon) {
-        // profile.icon_hash carries the "a_" prefix that marks an animated
-        // icon; guild.icon strips it, so check the prefixed version to
-        // decide whether to request the animated (gif) or static (png) asset
-        const profileHash = (data.profile && data.profile.icon_hash) || '';
-        const isAnimated = profileHash.startsWith('a_') || guild.icon.startsWith('a_');
-        const ext = isAnimated ? 'gif' : 'png';
-        const guildIcon = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${ext}`;
-        iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
-      }
+      renderDiscordWidget(data);
+      writeDiscordCache(data);
     } catch (err) {
       nameEl.textContent = 'server';
       statsEl.textContent = 'click to join';
