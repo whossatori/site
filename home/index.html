@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>satori / home</title>
+<link rel="icon" id="favicon" href="https://segs.lol/IEPPV1.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --card: #111114;
+    --card-edge: #1c1c20;
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.22);
+    --glow: rgba(255,255,255,0.06);
+    --glow-strong: rgba(255,255,255,0.14);
+    --text: #f2f2f0;
+    --text-dim: #8a8a8f;
+    --text-dimmer: #55555c;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    position: relative;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
+    pointer-events: none;
+  }
+
+  .stage {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .card {
+    position: relative;
+    background: linear-gradient(160deg, var(--card), #0d0d10);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 36px 28px 28px;
+    text-align: center;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+    transition: transform 0.15s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.02) inset,
+      0 0 26px -6px var(--glow),
+      0 20px 60px -20px rgba(0,0,0,0.8);
+  }
+
+  .card.hovered {
+    border-color: var(--line-strong);
+    box-shadow:
+      0 0 50px -2px var(--glow-strong),
+      0 0 0 1px rgba(255,255,255,0.04) inset,
+      0 25px 70px -20px rgba(0,0,0,0.9);
+  }
+
+  .card-inner {
+    transform: translateZ(20px);
+    backface-visibility: hidden;
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--text-dimmer);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    transition: color 0.2s;
+  }
+
+  .back-link:hover { color: var(--text-dim); }
+  .back-link svg { width: 12px; height: 12px; }
+
+  /* command list — lives directly in the card */
+  .cmd-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .cmd-list li {
+    display: flex;
+    align-items: baseline;
+    border-radius: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .cmd-list li:hover,
+  .cmd-list li.active {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--line);
+  }
+
+  .cmd-list li.active .cmd-keyword {
+    color: #fff;
+  }
+
+  .cmd-keyword {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    min-width: 80px;
+    text-align: left;
+    transition: color 0.15s;
+  }
+
+  .cmd-sep {
+    color: var(--text-dimmer);
+    margin: 0 12px;
+    user-select: none;
+    font-size: 13px;
+  }
+
+  .cmd-desc {
+    color: var(--text-dim);
+    font-size: 13px;
+    text-align: left;
+  }
+
+  /* ghost of what the user has typed so far */
+  .typed-ghost {
+    margin-top: 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    color: var(--text-dimmer);
+    letter-spacing: 0.08em;
+    min-height: 20px;
+    transition: color 0.15s;
+  }
+
+  .typed-ghost.no-match { color: #d98a8a; }
+
+  @keyframes flash-out {
+    0%   { opacity: 1; }
+    60%  { opacity: 0.15; }
+    100% { opacity: 0; }
+  }
+
+  .card.navigating {
+    animation: flash-out 0.35s ease-out forwards;
+  }
+
+  /* bonsai */
+  .bonsai-corner {
+    position: fixed;
+    bottom: 12px;
+    left: 80px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    line-height: 1.1;
+    letter-spacing: 0;
+    color: var(--text-dimmer);
+    white-space: pre;
+    pointer-events: none;
+    user-select: none;
+    z-index: 5;
+    opacity: 0.85;
+    transition: opacity 0.6s ease-in-out;
+  }
+
+  .bonsai-corner .leaf  { color: #cfcfcf; }
+  .bonsai-corner .trunk { color: #8a8a8f; }
+  .bonsai-corner .pot   { color: #6a6a6f; }
+
+  @media (max-width: 480px) { .bonsai-corner { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .card { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="card" id="card">
+    <div class="card-inner">
+
+      <a class="back-link" href="/">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        back
+      </a>
+
+      <ul class="cmd-list" id="cmd-list">
+        <li data-cmd="japan" data-url="/jp">
+          <span class="cmd-keyword">japan</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">travel & places</span>
+        </li>
+        <li data-cmd="github" data-url="/git">
+          <span class="cmd-keyword">github</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">code & projects</span>
+        </li>
+        <li data-cmd="anime" data-url="/anime">
+          <span class="cmd-keyword">anime</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">anime list</span>
+        </li>
+        <li data-cmd="movies" data-url="/movies">
+          <span class="cmd-keyword">movies</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">film diary</span>
+        </li>
+        <li data-cmd="music" data-url="/music">
+          <span class="cmd-keyword">music</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">what i'm listening to</span>
+        </li>
+      </ul>
+
+      <div class="typed-ghost" id="typed-ghost"></div>
+
+    </div>
+  </div>
+</div>
+
+<div class="bonsai-corner" id="bonsai" aria-hidden="true"></div>
+
+<script>
+  // ── card tilt ──────────────────────────────────────────────────
+  const card  = document.getElementById('card');
+  const stage = document.getElementById('stage');
+  const maxTilt = 6;
+  const maxLift = -6;
+
+  function handleMove(e) {
+    const rect = card.getBoundingClientRect();
+    const dx = ((e.clientX - rect.left) / rect.width  - 0.5) * 2;
+    const dy = ((e.clientY - rect.top)  / rect.height - 0.5) * 2;
+    card.style.transform =
+      `rotateX(${-dy * maxTilt}deg) rotateY(${dx * maxTilt}deg) translateY(${maxLift}px) scale(1.008)`;
+  }
+
+  function resetTilt() {
+    card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
+    card.classList.remove('hovered');
+  }
+
+  stage.addEventListener('mousemove', handleMove);
+  stage.addEventListener('mouseenter', () => card.classList.add('hovered'));
+  stage.addEventListener('mouseleave', resetTilt);
+  if (window.matchMedia('(hover: none)').matches) {
+    stage.removeEventListener('mousemove', handleMove);
+  }
+
+  // ── keypress routing (like the admin sequence) ─────────────────
+  const COMMANDS = {
+    japan:  '/jp',
+    github: '/git',
+    anime:  '/anime',
+    movies: '/movies',
+    music:  '/music',
+  };
+
+  const items     = Array.from(document.querySelectorAll('#cmd-list li'));
+  const ghost     = document.getElementById('typed-ghost');
+  let keyBuffer   = '';
+  let clearTimer  = null;
+
+  function resetBuffer() {
+    keyBuffer = '';
+    ghost.textContent = '';
+    ghost.classList.remove('no-match');
+    items.forEach(li => li.classList.remove('active'));
+  }
+
+  function navigate(url) {
+    card.classList.add('navigating');
+    setTimeout(() => { window.location.href = url; }, 320);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    // ignore modifier combos and non-character keys
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Escape') { resetBuffer(); return; }
+    if (e.key === 'Backspace') {
+      keyBuffer = keyBuffer.slice(0, -1);
+    } else if (e.key.length === 1) {
+      keyBuffer += e.key.toLowerCase();
+    } else {
+      return;
+    }
+
+    // reset the auto-clear timer on every keystroke
+    clearTimeout(clearTimer);
+    clearTimer = setTimeout(resetBuffer, 1200);
+
+    ghost.textContent = keyBuffer;
+
+    // check for exact match → navigate immediately
+    if (COMMANDS[keyBuffer]) {
+      navigate(COMMANDS[keyBuffer]);
+      return;
+    }
+
+    // highlight any prefix matches
+    const matches = items.filter(li => li.dataset.cmd.startsWith(keyBuffer));
+    items.forEach(li => li.classList.toggle('active', matches.includes(li)));
+
+    if (matches.length === 0) {
+      ghost.classList.add('no-match');
+      clearTimeout(clearTimer);
+      clearTimer = setTimeout(resetBuffer, 600);
+    } else {
+      ghost.classList.remove('no-match');
+    }
+  });
+
+  // clicking a row still works too
+  items.forEach(li => {
+    li.addEventListener('click', () => navigate(li.dataset.url));
+  });
+
+  // ── bonsai ─────────────────────────────────────────────────────
+  const bonsaiEl  = document.getElementById('bonsai');
+  const GRID_W    = 28;
+  const GRID_H    = 14;
+  const BASE_LIFE = 24;
+
+  let grid, branches, rngSeed, growTimer;
+
+  function rand() {
+    rngSeed = (rngSeed * 9301 + 49297) % 233280;
+    return rngSeed / 233280;
+  }
+
+  function makeGrid() {
+    const g = [];
+    for (let y = 0; y < GRID_H; y++) g.push(new Array(GRID_W).fill(' '));
+    return g;
+  }
+
+  let leafCells = [], fallingLeaves = [];
+
+  function setCell(x, y, ch, cls) {
+    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
+    grid[y][x] = cls ? `<span class="${cls}">${ch}</span>` : ch;
+    if (cls === 'leaf') leafCells.push({ x, y });
+  }
+
+  const TRUNK = 0, SHOOT_LEFT = 1, SHOOT_RIGHT = 2;
+
+  function pushBranch(x, y, type, lifeLeft) {
+    branches.push({ x, y, type, life: lifeLeft, age: 0, shot: false });
+  }
+
+  function stepDirection(b) {
+    if (b.type === TRUNK) {
+      const wobbleChance = b.age < 4 ? 0.12 : 0.32;
+      const r = rand();
+      let dx = 0;
+      if (r < wobbleChance / 2) dx = -1;
+      else if (r < wobbleChance) dx = 1;
+      return { dx, dy: -1, ch: dx === 0 ? '|' : (dx < 0 ? '\\' : '/') };
+    } else if (b.type === SHOOT_LEFT) {
+      const dy = rand() < 0.4 ? -1 : 0;
+      return { dx: -1, dy, ch: dy < 0 ? '\\' : '_' };
+    } else {
+      const dy = rand() < 0.4 ? -1 : 0;
+      return { dx: 1, dy, ch: dy < 0 ? '/' : '_' };
+    }
+  }
+
+  function stepBranch(b) {
+    if (b.life <= 0) return;
+    b.age++; b.life--;
+    const { dx, dy, ch } = stepDirection(b);
+    if (b.type === TRUNK && !b.shot && b.life > 6 && b.age >= 3) {
+      const forceChance = (b.age === 5 || b.age === 9) ? 0.8 : 0.15;
+      if (rand() < forceChance) {
+        pushBranch(b.x, b.y, rand() < 0.5 ? SHOOT_LEFT : SHOOT_RIGHT, Math.max(4, Math.floor(b.life * 0.65)));
+        b.shot = true;
+        if (rand() < 0.5) b.shot = false;
+      }
+    }
+    setCell(b.x, b.y, ch, 'trunk');
+    b.x += dx; b.y += dy;
+    if (b.life <= 2 || b.y <= 1) {
+      for (const [lx, ly] of [[0,0],[-1,0],[1,0],[0,-1],[-1,-1],[1,-1],[0,1],[1,1],[-1,1]])
+        if (rand() < 0.6) setCell(b.x + lx, b.y + ly, '&', 'leaf');
+    }
+  }
+
+  function initTree() {
+    rngSeed = (Date.now() % 100000) + 41;
+    grid = makeGrid(); branches = []; leafCells = []; fallingLeaves = [];
+    pushBranch(Math.floor(GRID_W / 2), GRID_H - 3, TRUNK, BASE_LIFE);
+    const rimStr = ' '.repeat(2) + '_'.repeat(GRID_W - 4) + ' '.repeat(2);
+    for (let i = 0; i < rimStr.length; i++) setCell(i, GRID_H - 3, rimStr[i], 'pot');
+    const bowlInner = Math.max(2, GRID_W - 8);
+    const bowlPad   = Math.floor((GRID_W - bowlInner - 2) / 2);
+    const bowlStr   = ' '.repeat(bowlPad) + '\\' + '_'.repeat(bowlInner) + '/' + ' '.repeat(bowlPad);
+    for (let i = 0; i < bowlStr.length; i++) setCell(i, GRID_H - 2, bowlStr[i], 'pot');
+  }
+
+  function renderGrid() {
+    const c = grid.map(r => r.slice());
+    for (const l of fallingLeaves)
+      if (l.y >= 0 && l.y < GRID_H && l.x >= 0 && l.x < GRID_W)
+        c[l.y][l.x] = `<span class="leaf">&</span>`;
+    bonsaiEl.innerHTML = c.map(r => r.join('')).join('\n');
+  }
+
+  function growStep() {
+    if (!branches.length) return false;
+    const alive = [];
+    for (const b of branches) {
+      if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) {
+        stepBranch(b);
+        if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) alive.push(b);
+      }
+    }
+    branches = alive; renderGrid();
+    return branches.length > 0;
+  }
+
+  function detachOneLeaf() {
+    if (!leafCells.length) return false;
+    const idx = Math.floor(rand() * leafCells.length);
+    const { x, y } = leafCells.splice(idx, 1)[0];
+    setCell(x, y, ' ', null);
+    fallingLeaves.push({ x, y, settleDelay: Math.floor(rand() * 3) });
+    renderGrid(); return true;
+  }
+
+  function tickFallingLeaves() {
+    if (!fallingLeaves.length) return false;
+    const still = [];
+    for (const leaf of fallingLeaves) {
+      if (leaf.settleDelay > 0) { leaf.settleDelay--; still.push(leaf); continue; }
+      const nextY = leaf.y + 1;
+      if (nextY >= GRID_H - 1) continue;
+      let nextX = leaf.x;
+      const drift = rand();
+      if (drift < 0.18) nextX -= 1;
+      else if (drift < 0.36) nextX += 1;
+      leaf.x = Math.max(1, Math.min(GRID_W - 2, nextX));
+      leaf.y = nextY;
+      still.push(leaf);
+    }
+    fallingLeaves = still; renderGrid();
+    return fallingLeaves.length > 0 || leafCells.length > 0;
+  }
+
+  let detachTimer, fallTimer;
+
+  function startLeafFall() {
+    detachTimer = setInterval(() => { if (!detachOneLeaf()) clearInterval(detachTimer); }, 1400);
+    fallTimer   = setInterval(() => {
+      if (!tickFallingLeaves()) {
+        clearInterval(detachTimer); clearInterval(fallTimer);
+        setTimeout(runCycle, 4000);
+      }
+    }, 350);
+  }
+
+  function runCycle() {
+    bonsaiEl.style.opacity = '0';
+    setTimeout(() => {
+      initTree(); renderGrid(); bonsaiEl.style.opacity = '0.85';
+      growTimer = setInterval(() => {
+        if (!growStep()) { clearInterval(growTimer); setTimeout(startLeafFall, 6000); }
+      }, 3000);
+    }, 500);
+  }
+
+  runCycle();
+</script>
+
+</body>
+</html>

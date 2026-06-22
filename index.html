@@ -439,8 +439,10 @@
 <div class="stage" id="stage">
   <div class="card" id="card">
     <div class="card-inner">
-      <div class="avatar-ring">
-        <div class="avatar" id="avatar" data-img-url="https://segs.lol/IEPPV1.png"><img src="https://segs.lol/IEPPV1.png" alt=""></div>
+      <div class="avatar-ring" style="cursor:pointer;">
+        <a href="/home" style="display:block;width:100%;height:100%;border-radius:50%;text-decoration:none;">
+          <div class="avatar" id="avatar" data-img-url="https://segs.lol/IEPPV1.png"><img src="https://segs.lol/IEPPV1.png" alt=""></div>
+        </a>
       </div>
       <h1 class="name">satori</h1>
 
@@ -760,10 +762,13 @@
     branches = [];
     leafCells = [];
     fallingLeaves = [];
-    pushBranch(Math.floor(GRID_W / 2), GRID_H - 2, TRUNK, BASE_LIFE);
-    const potY = GRID_H - 1;
-    const potStr = ':' + '_'.repeat(GRID_W - 2) + ':';
-    for (let i = 0; i < potStr.length; i++) setCell(i, potY, potStr[i], 'pot');
+    pushBranch(Math.floor(GRID_W / 2), GRID_H - 3, TRUNK, BASE_LIFE);
+    const rimStr = ' '.repeat(2) + '_'.repeat(GRID_W - 4) + ' '.repeat(2);
+    for (let i = 0; i < rimStr.length; i++) setCell(i, GRID_H - 3, rimStr[i], 'pot');
+    const bowlInner = Math.max(2, GRID_W - 8);
+    const bowlPad   = Math.floor((GRID_W - bowlInner - 2) / 2);
+    const bowlStr   = ' '.repeat(bowlPad) + '\\' + '_'.repeat(bowlInner) + '/' + ' '.repeat(bowlPad);
+    for (let i = 0; i < bowlStr.length; i++) setCell(i, GRID_H - 2, bowlStr[i], 'pot');
   }
 
   function renderGrid() {
