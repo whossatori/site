@@ -550,7 +550,7 @@ function getBlossomOrigin() {
 
 const floorEl   = document.getElementById('petal-floor');
 const COL_W     = 18;          // px wide per column bucket
-const MAX_PILE  = 7;           // max rows high a pile can grow
+const MAX_PILE  = 6;           // max rows high a pile can grow
 // Per-column state: array of { els: [DOM spans], age: number }
 const cols      = {};
 
@@ -625,7 +625,7 @@ function erodeFloor() {
 
     // Once a row is old enough, fade and remove the bottom one
     const bottom = col.rows[0];
-    if (bottom && bottom.age > 18) {   // ~18 ticks ≈ 90s at 5s interval
+    if (bottom && bottom.age > 24) {   // ~24 ticks ≈ 3.2 min at 8s interval
       // Fade out then remove
       bottom.el.style.transition = 'opacity 3s ease-out';
       bottom.el.style.opacity = '0';
@@ -638,7 +638,7 @@ function erodeFloor() {
 }
 
 // Run erosion every 5 seconds
-setInterval(erodeFloor, 5000);
+setInterval(erodeFloor, 8000);
 
 // ── flying petals ──────────────────────────────────────────────
 function spawnPetal(initialDelay) {
@@ -681,7 +681,7 @@ function spawnPetal(initialDelay) {
     el.addEventListener('animationend', () => {
       // Only land petals that actually fell toward the floor
       // (driftY > 30% of screen height means it travelled downward significantly)
-      if (driftY > window.innerHeight * 0.3) {
+      if (driftY > window.innerHeight * 0.3 && Math.random() < 0.35) {
         const landX = startX + driftX;
         // Only land if it's still on-screen horizontally
         if (landX >= 0 && landX <= window.innerWidth) {
