@@ -67,12 +67,12 @@
     padding: 36px 28px 28px;
     text-align: center;
     transform-style: preserve-3d;
+    backface-visibility: hidden;
     transition: transform 0.15s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.02) inset,
       0 0 26px -6px var(--glow),
       0 20px 60px -20px rgba(0,0,0,0.8);
-    will-change: transform, box-shadow, border-color;
   }
 
   .card.hovered {
@@ -85,6 +85,7 @@
 
   .card-inner {
     transform: translateZ(20px);
+    backface-visibility: hidden;
   }
 
   .avatar-ring {
@@ -95,8 +96,6 @@
     border: 1px solid var(--line-strong);
     padding: 4px;
     transition: box-shadow 0.3s ease-out;
-    will-change: box-shadow;
-    transform: translateZ(0);
   }
 
   .card.hovered .avatar-ring {
@@ -527,7 +526,7 @@
 <script>
   const card = document.getElementById('card');
   const stage = document.getElementById('stage');
-  const maxTilt = 10; // degrees
+  const maxTilt = 6; // degrees
   const maxLift = -6; // px translateY on hover
 
   function handleMove(e) {
@@ -544,7 +543,7 @@
     const rotateX = -dy * maxTilt;
 
     card.style.transform =
-      `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${maxLift}px) scale(1.015)`;
+      `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${maxLift}px) scale(1.008)`;
   }
 
   function resetTilt() {
@@ -593,7 +592,13 @@
       dotEl.style.background = onlineCount > 0 ? '#fff' : '#555';
 
       if (guild.id && guild.icon) {
-        const guildIcon = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`;
+        // profile.icon_hash carries the "a_" prefix that marks an animated
+        // icon; guild.icon strips it, so check the prefixed version to
+        // decide whether to request the animated (gif) or static (png) asset
+        const profileHash = (data.profile && data.profile.icon_hash) || '';
+        const isAnimated = profileHash.startsWith('a_') || guild.icon.startsWith('a_');
+        const ext = isAnimated ? 'gif' : 'png';
+        const guildIcon = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${ext}`;
         iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
       }
     } catch (err) {
