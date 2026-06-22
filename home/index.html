@@ -90,6 +90,35 @@
     100% { transform: translate(var(--drift-x), var(--drift-y)) rotate(var(--rot-end)); opacity: 0; }
   }
 
+  /* ── petal floor ── */
+  #petal-floor {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    pointer-events: none;
+    user-select: none;
+    z-index: 2;
+    font-family: 'Courier New', monospace;
+    line-height: 1.1;
+    white-space: pre;
+    overflow: hidden;
+  }
+
+  .floor-col {
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    flex-direction: column-reverse; /* stack upward */
+    align-items: center;
+  }
+
+  .floor-petal {
+    display: block;
+    line-height: 1;
+    transition: opacity 2s ease-out;
+  }
+
   /* ── card ── */
   .stage {
     position: relative;
@@ -204,6 +233,7 @@
 <body>
 
 <div class="blossom-tree" id="blossom-tree" aria-hidden="true"></div>
+<div id="petal-floor" aria-hidden="true"></div>
 
 <div class="stage" id="stage">
   <div class="card" id="card">
@@ -495,11 +525,11 @@ renderTree();
 const PETAL_CHARS  = ['*', '.', 'o', "'", ','];
 const PETAL_COUNT  = 55;
 const PETAL_COLORS = [
-  'hsl(345,100%,88%)',  // soft pink
-  'hsl(350,100%,82%)',  // medium pink
-  'hsl(340,100%,78%)',  // deeper pink
-  'hsl(355,100%,92%)',  // pale blush
-  'hsl(320, 80%,85%)',  // lilac-pink
+  'hsl(345,100%,88%)',
+  'hsl(350,100%,82%)',
+  'hsl(340,100%,78%)',
+  'hsl(355,100%,92%)',
+  'hsl(320, 80%,85%)',
 ];
 
 function getBlossomOrigin() {
@@ -514,25 +544,120 @@ function getBlossomOrigin() {
   };
 }
 
+// ── petal floor ────────────────────────────────────────────────
+// Divides the screen into columns; each column tracks a pile of
+// landed petals that grow upward and slowly erode.
+
+const floorEl   = document.getElementById('petal-floor');
+const COL_W     = 18;          // px wide per column bucket
+const MAX_PILE  = 7;           // max rows high a pile can grow
+// Per-column state: array of { els: [DOM spans], age: number }
+const cols      = {};
+
+function getCol(x) {
+  const idx = Math.floor(x / COL_W);
+  if (!cols[idx]) cols[idx] = { rows: [], baseX: idx * COL_W };
+  return cols[idx];
+}
+
+// Each "row" in a pile is a horizontal strip of 1–4 chars
+// with random sizes, giving an uneven, natural look.
+function makeRowSpans(color) {
+  // 1–4 characters per row, each with its own size + slight hue shift
+  const count = 1 + Math.floor(Math.random() * 4);
+  const spans = [];
+  for (let i = 0; i < count; i++) {
+    const s    = document.createElement('span');
+    s.className = 'floor-petal';
+    s.textContent = PETAL_CHARS[Math.floor(Math.random() * PETAL_CHARS.length)];
+    // size varies between 8px and 16px — wide range for naturalism
+    const sz   = 8 + Math.random() * 8;
+    // slight hue drift from the landing petal's color
+    const hue  = 330 + Math.random() * 30;
+    const lit  = 75 + Math.random() * 18;
+    s.style.cssText = `font-size:${sz}px; color:hsl(${hue},90%,${lit}%); opacity:0.85;`;
+    spans.push(s);
+  }
+  return spans;
+}
+
+function landPetal(x, color) {
+  const col = getCol(x);
+
+  if (col.rows.length >= MAX_PILE) {
+    // Pile full — quietly drop this petal (floor stays capped)
+    return;
+  }
+
+  // Build a wrapper div for this row
+  const rowEl = document.createElement('div');
+  rowEl.style.cssText = 'display:flex; align-items:flex-end; justify-content:center; line-height:1;';
+
+  const spans = makeRowSpans(color);
+  spans.forEach(s => rowEl.appendChild(s));
+
+  // Position the column container if first row
+  let colEl = floorEl.querySelector(`[data-col="${Math.floor(x / COL_W)}"]`);
+  if (!colEl) {
+    colEl = document.createElement('div');
+    colEl.className = 'floor-col';
+    colEl.dataset.col = Math.floor(x / COL_W);
+    // Jitter the column's x slightly so piles don't look grid-perfect
+    const jitter = (Math.random() - 0.5) * COL_W * 0.6;
+    colEl.style.left  = (col.baseX + jitter) + 'px';
+    // Vary the col width slightly too
+    colEl.style.width = (COL_W + Math.floor(Math.random() * 8)) + 'px';
+    floorEl.appendChild(colEl);
+  }
+
+  colEl.appendChild(rowEl);
+  col.rows.push({ el: rowEl, age: 0 });
+}
+
+// Erosion: periodically age piles and remove oldest bottom row
+function erodeFloor() {
+  for (const idx of Object.keys(cols)) {
+    const col = cols[idx];
+    if (!col.rows.length) continue;
+
+    // Age every row
+    col.rows.forEach(r => r.age++);
+
+    // Once a row is old enough, fade and remove the bottom one
+    const bottom = col.rows[0];
+    if (bottom && bottom.age > 18) {   // ~18 ticks ≈ 90s at 5s interval
+      // Fade out then remove
+      bottom.el.style.transition = 'opacity 3s ease-out';
+      bottom.el.style.opacity = '0';
+      setTimeout(() => {
+        bottom.el.remove();
+      }, 3000);
+      col.rows.shift();
+    }
+  }
+}
+
+// Run erosion every 5 seconds
+setInterval(erodeFloor, 5000);
+
+// ── flying petals ──────────────────────────────────────────────
 function spawnPetal(initialDelay) {
   const el  = document.createElement('span');
   el.className = 'petal';
   el.textContent = PETAL_CHARS[Math.floor(Math.random() * PETAL_CHARS.length)];
 
   function launch(origin) {
-    // Always start from the tree on the left
     if (origin) {
       el.style.left = origin.x + 'px';
       el.style.top  = origin.y + 'px';
     } else {
-      // Fallback: left 10% of screen
       el.style.left = (Math.random() * window.innerWidth * 0.18) + 'px';
       el.style.top  = (Math.random() * window.innerHeight * 0.75) + 'px';
     }
 
-    // Drift rightward across the whole screen, falling gently
-    const driftX   = window.innerWidth * (0.55 + Math.random() * 0.55); // travels 55–110% of screen width
-    const driftY   = window.innerHeight * (0.05 + Math.random() * 0.6); // gentle to heavy fall
+    const startX   = parseFloat(el.style.left);
+    const driftX   = window.innerWidth * (0.55 + Math.random() * 0.55);
+    const driftY   = window.innerHeight * (0.05 + Math.random() * 0.6);
     const rotStart = (Math.random() - 0.5) * 40;
     const rotEnd   = rotStart + (Math.random() - 0.5) * 200;
     const duration = 7000 + Math.random() * 12000;
@@ -549,14 +674,22 @@ function spawnPetal(initialDelay) {
     el.style.animationDelay   = (initialDelay != null ? initialDelay : 0) + 'ms';
     el.style.fontSize = size + 'px';
     el.style.color    = color;
-    el.style.animationName = 'none'; // reset
-    void el.offsetWidth;             // force reflow
+    el.style.animationName = 'none';
+    void el.offsetWidth;
     el.style.animationName = 'drift';
 
-    // When done, respawn from tree
     el.addEventListener('animationend', () => {
+      // Only land petals that actually fell toward the floor
+      // (driftY > 30% of screen height means it travelled downward significantly)
+      if (driftY > window.innerHeight * 0.3) {
+        const landX = startX + driftX;
+        // Only land if it's still on-screen horizontally
+        if (landX >= 0 && landX <= window.innerWidth) {
+          landPetal(landX, color);
+        }
+      }
+
       el.style.animationDelay = '0ms';
-      // small random pause before next flight
       setTimeout(() => launch(getBlossomOrigin()), 200 + Math.random() * 1800);
     }, { once: true });
   }
@@ -566,11 +699,11 @@ function spawnPetal(initialDelay) {
   return el;
 }
 
-// Stagger initial spawns so they don't all appear at once
+// Stagger initial spawns
 for (let i = 0; i < PETAL_COUNT; i++) {
   const delay = i < 12
-    ? -(Math.random() * 9000)        // first batch already mid-flight
-    : Math.random() * 6000;          // rest trickle in
+    ? -(Math.random() * 9000)
+    : Math.random() * 6000;
   spawnPetal(delay);
 }
 </script>
