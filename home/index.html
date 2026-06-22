@@ -274,20 +274,6 @@
     max-width: min(480px, 90vw);
     max-height: 80vh;
   }
-  #egg-close {
-    position: absolute;
-    top: 10px; right: 12px;
-    background: rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: #fff;
-    border-radius: 50%;
-    width: 28px; height: 28px;
-    font-size: 14px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
-  }
-  #egg-close:hover { background: rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
@@ -343,7 +329,6 @@
 <div id="egg-overlay" role="dialog" aria-modal="true" aria-label="Easter egg">
   <div id="egg-box">
     <img src="https://segs.lol/8LuwPj.gif" alt="🐣">
-    <button id="egg-close" aria-label="Close">✕</button>
   </div>
 </div>
 
@@ -417,7 +402,6 @@ items.forEach(li => li.addEventListener('click', () => navigate(li.dataset.url))
 
 // ── easter egg close ───────────────────────────────────────────
 const eggOverlay = document.getElementById('egg-overlay');
-document.getElementById('egg-close').addEventListener('click', () => eggOverlay.classList.remove('active'));
 eggOverlay.addEventListener('click', (e) => { if (e.target === eggOverlay) eggOverlay.classList.remove('active'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && eggOverlay.classList.contains('active')) eggOverlay.classList.remove('active'); }, true);
 
