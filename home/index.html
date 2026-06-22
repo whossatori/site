@@ -239,6 +239,55 @@
   }
   .card.navigating { animation: flash-out 0.35s ease-out forwards; }
   @media (prefers-reduced-motion: reduce) { .card { transition: none !important; } }
+
+  /* ── easter egg modal ── */
+  #egg-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    animation: egg-fadein 0.25s ease-out;
+  }
+  #egg-overlay.active { display: flex; }
+  @keyframes egg-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  #egg-box {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 0 60px -10px rgba(255,183,197,0.3), 0 30px 80px -20px rgba(0,0,0,0.9);
+    animation: egg-popin 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes egg-popin {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  #egg-box img {
+    display: block;
+    max-width: min(480px, 90vw);
+    max-height: 80vh;
+  }
+  #egg-close {
+    position: absolute;
+    top: 10px; right: 12px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  #egg-close:hover { background: rgba(255,255,255,0.15); }
 </style>
 </head>
 <body>
@@ -287,6 +336,14 @@
 
       <div class="typed-ghost" id="typed-ghost"></div>
     </div>
+  </div>
+</div>
+
+<!-- easter egg modal -->
+<div id="egg-overlay" role="dialog" aria-modal="true" aria-label="Easter egg">
+  <div id="egg-box">
+    <img src="https://segs.lol/8LuwPj.gif" alt="🐣">
+    <button id="egg-close" aria-label="Close">✕</button>
   </div>
 </div>
 
@@ -339,6 +396,13 @@ document.addEventListener('keydown', (e) => {
 
   if (COMMANDS[keyBuffer]) { navigate(COMMANDS[keyBuffer]); return; }
 
+  // easter egg
+  if (keyBuffer === 'dihdihdih') {
+    document.getElementById('egg-overlay').classList.add('active');
+    resetBuffer();
+    return;
+  }
+
   const matches = items.filter(li => li.dataset.cmd.startsWith(keyBuffer));
   items.forEach(li => li.classList.toggle('active', matches.includes(li)));
   if (matches.length === 0) {
@@ -350,6 +414,12 @@ document.addEventListener('keydown', (e) => {
   }
 });
 items.forEach(li => li.addEventListener('click', () => navigate(li.dataset.url)));
+
+// ── easter egg close ───────────────────────────────────────────
+const eggOverlay = document.getElementById('egg-overlay');
+document.getElementById('egg-close').addEventListener('click', () => eggOverlay.classList.remove('active'));
+eggOverlay.addEventListener('click', (e) => { if (e.target === eggOverlay) eggOverlay.classList.remove('active'); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && eggOverlay.classList.contains('active')) eggOverlay.classList.remove('active'); }, true);
 
 // ── cherry blossom tree (cbonsai style, cherry blossom shaped) ──
 const treeEl = document.getElementById('blossom-tree');
