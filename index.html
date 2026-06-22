@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>satori</title>
-<link rel="icon" id="favicon" href="https://segs.lol/IEPPV1.png">
+<title>satori / home</title>
+<link rel="icon" href="https://segs.lol/IEPPV1.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,7 +12,6 @@
   :root {
     --bg: #0a0a0c;
     --card: #111114;
-    --card-edge: #1c1c20;
     --line: rgba(255,255,255,0.08);
     --line-strong: rgba(255,255,255,0.22);
     --glow: rgba(255,255,255,0.06);
@@ -22,45 +21,93 @@
     --text-dimmer: #55555c;
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    margin: 0;
-    padding: 0;
+    width: 100%; height: 100%;
     min-height: 100vh;
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
+    overflow: hidden;
   }
 
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    position: relative;
-  }
-
-  /* subtle grain / noise floor so pure black doesn't look flat */
   body::before {
     content: "";
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background-image:
-      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
+      radial-gradient(circle at 15% 50%, rgba(255,182,193,0.03), transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.015), transparent 40%);
     pointer-events: none;
+    z-index: 0;
   }
 
+  /* ── cherry blossom tree ── */
+  .blossom-tree {
+    position: fixed;
+    left: -4px;
+    bottom: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.15;
+    letter-spacing: 0;
+    white-space: pre;
+    pointer-events: none;
+    user-select: none;
+    z-index: 3;
+    opacity: 0.90;
+  }
+
+  .blossom-tree .trunk       { color: #6b4c36; }
+  .blossom-tree .branch      { color: #8a6848; }
+  .blossom-tree .branch-thin { color: #7a5a3e; }
+  .blossom-tree .blossom     { color: #ffb7c5; text-shadow: 0 0 6px rgba(255,150,180,0.5); }
+  .blossom-tree .blossom-deep{ color: #ff85a8; text-shadow: 0 0 8px rgba(255,100,160,0.6); }
+  .blossom-tree .blossom-pale{ color: #ffd6e3; text-shadow: 0 0 4px rgba(255,180,210,0.4); }
+  .blossom-tree .root        { color: #5a4030; }
+
+  /* ── drifting petals ── */
+  .petal {
+    position: fixed;
+    font-family: 'Courier New', monospace;
+    pointer-events: none;
+    user-select: none;
+    z-index: 4;
+    font-size: 13px;
+    line-height: 1;
+    will-change: transform, opacity;
+    animation: drift linear forwards;
+  }
+
+  @keyframes drift {
+    0%   { transform: translate(0, 0) rotate(var(--rot-start)); opacity: 0; }
+    6%   { opacity: var(--petal-opacity); }
+    90%  { opacity: calc(var(--petal-opacity) * 0.5); }
+    100% { transform: translate(var(--drift-x), var(--drift-y)) rotate(var(--rot-end)); opacity: 0; }
+  }
+
+  /* ── card ── */
   .stage {
+    position: fixed;
+    /* centre the card in the space to the right of the tree (~380px wide) */
+    left: calc(380px + (100vw - 380px) / 2);
+    top: 50%;
+    transform: translate(-50%, -50%);
     perspective: 1000px;
     width: 100%;
-    max-width: 460px;
+    max-width: 400px;
+    z-index: 5;
+  }
+
+  @media (max-width: 860px) {
+    .stage {
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .blossom-tree { font-size: 10px; }
   }
 
   .card {
-    position: relative;
     background: linear-gradient(160deg, var(--card), #0d0d10);
     border: 1px solid var(--line);
     border-radius: 22px;
@@ -83,1013 +130,451 @@
       0 25px 70px -20px rgba(0,0,0,0.9);
   }
 
-  .card-inner {
-    transform: translateZ(20px);
-    backface-visibility: hidden;
-  }
+  .card-inner { transform: translateZ(20px); backface-visibility: hidden; }
 
-  .avatar-ring {
-    width: 92px;
-    height: 92px;
-    margin: 0 auto 18px;
-    border-radius: 50%;
-    border: 1px solid var(--line-strong);
-    padding: 4px;
-    box-shadow: 0 0 12px -4px rgba(255,255,255,0.12);
-    transition: box-shadow 0.3s ease-out;
-  }
-
-  .card.hovered .avatar-ring {
-    box-shadow: 0 0 24px -2px rgba(255,255,255,0.25);
-  }
-
-  .avatar {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: #1a1a1e;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    color: var(--text-dim);
-    overflow: hidden;
-  }
-
-  .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .name {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 600;
-    font-size: 22px;
-    letter-spacing: 0.01em;
-    margin: 0 0 22px;
-  }
-
-  .links {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin-bottom: 22px;
-  }
-
-  .link-item {
-    display: flex;
-    flex-direction: column;
+  .back-link {
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     text-decoration: none;
-    color: var(--text-dim);
-    padding: 10px 4px;
-    border-radius: 12px;
-    border: 1px solid transparent;
-    transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s;
-  }
-
-  .link-item:hover {
-    color: var(--text);
-    border-color: var(--line);
-    background: rgba(255,255,255,0.03);
-    transform: translateY(-2px);
-  }
-
-  .link-item svg {
-    width: 20px;
-    height: 20px;
-    pointer-events: none;
-  }
-
-  .link-label {
-    font-size: 10px;
-    letter-spacing: 0.03em;
+    color: var(--text-dimmer);
+    font-size: 12px;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: inherit;
-    opacity: 0.75;
-    pointer-events: none;
+    margin-bottom: 28px;
+    transition: color 0.2s;
   }
+  .back-link:hover { color: var(--text-dim); }
+  .back-link svg { width: 12px; height: 12px; }
 
-  .discord-widget {
+  .cmd-list {
+    list-style: none;
     display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 14px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    text-decoration: none;
-    transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .discord-widget:hover {
-    border-color: var(--line-strong);
-    background: rgba(255,255,255,0.06);
-    transform: translateY(-1px);
-    box-shadow: 0 0 22px -4px var(--glow-strong);
-  }
-
-  .discord-icon {
-    width: 38px;
-    height: 38px;
+  .cmd-list li {
+    display: flex;
+    align-items: baseline;
     border-radius: 10px;
-    background: #1a1a1e;
-    border: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--text);
-    pointer-events: none;
-  }
-
-  .discord-icon svg,
-  .discord-icon img {
-    width: 20px;
-    height: 20px;
-    pointer-events: none;
-  }
-
-  .discord-info {
-    flex: 1;
-    text-align: left;
-    min-width: 0;
-    pointer-events: none;
-  }
-
-  .discord-name {
-    font-family: 'Space Grotesk', sans-serif;
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--text);
-    margin: 0 0 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .discord-stats {
-    font-size: 12px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--text-dim);
-    display: inline-block;
-    flex-shrink: 0;
-  }
-
-  .discord-join {
-    flex-shrink: 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-dim);
-    background: transparent;
-    border: 1px solid var(--line);
-    padding: 6px 14px;
-    border-radius: 8px;
-    letter-spacing: 0.02em;
-    pointer-events: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .card { transition: none !important; }
-  }
-
-  .bonsai-corner {
-    position: fixed;
-    bottom: 12px;
-    left: 80px;
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    line-height: 1.1;
-    letter-spacing: 0;
-    color: var(--text-dimmer);
-    white-space: pre;
-    pointer-events: none;
-    user-select: none;
-    z-index: 5;
-    opacity: 0.85;
-    transition: opacity 0.6s ease-in-out;
-  }
-
-  .bonsai-corner .leaf {
-    color: #cfcfcf;
-  }
-
-  .bonsai-corner .trunk {
-    color: #8a8a8f;
-  }
-
-  .bonsai-corner .pot {
-    color: #6a6a6f;
-  }
-
-  @media (max-width: 480px) {
-    .bonsai-corner {
-      display: none;
-    }
-  }
-
-  .admin-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    padding: 20px;
-  }
-
-  .admin-overlay.visible {
-    display: flex;
-  }
-
-  .admin-box {
-    background: var(--card);
-    border: 1px solid var(--line-strong);
-    border-radius: 16px;
-    padding: 24px;
-    width: 100%;
-    max-width: 360px;
-    box-shadow: 0 0 40px -2px var(--glow-strong);
-  }
-
-  .admin-box h2 {
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 16px;
-    margin: 0 0 14px;
-    color: var(--text);
-  }
-
-  .admin-box input[type="password"],
-  .admin-panel input[type="text"] {
-    width: 100%;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    padding: 9px 11px;
-    margin-bottom: 10px;
-    outline: none;
-  }
-
-  .admin-box input[type="password"]:focus,
-  .admin-panel input[type="text"]:focus {
-    border-color: var(--line-strong);
-  }
-
-  .admin-btn-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 6px;
-  }
-
-  .admin-btn {
-    flex: 1;
-    padding: 9px 0;
-    border-radius: 8px;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.04);
-    color: var(--text);
-    font-family: 'Space Grotesk', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 9px 12px;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    transition: background 0.15s, border-color 0.15s;
+    border: 1px solid transparent;
   }
 
-  .admin-btn:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: var(--line-strong);
+  .cmd-list li:hover,
+  .cmd-list li.active {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--line);
   }
 
-  .admin-btn.primary {
-    background: var(--text);
-    color: var(--bg);
-    border: none;
+  .cmd-list li.active .cmd-keyword { color: #fff; }
+
+  .cmd-keyword {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--text);
+    min-width: 80px;
+    text-align: left;
+    transition: color 0.15s;
   }
 
-  .admin-btn.primary:hover {
-    opacity: 0.85;
-  }
+  .cmd-sep   { color: var(--text-dimmer); margin: 0 12px; user-select: none; font-size: 13px; }
+  .cmd-desc  { color: var(--text-dim); font-size: 13px; text-align: left; }
 
-  .admin-error {
-    font-size: 12px;
-    color: #d98a8a;
-    margin: -4px 0 10px;
-    display: none;
-  }
-
-  .admin-panel {
-    max-width: 420px;
-    max-height: 80vh;
-    overflow-y: auto;
-    scrollbar-width: none;
-  }
-
-  .admin-panel::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
-  }
-
-  .admin-panel label {
-    display: block;
-    font-size: 11px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin: 14px 0 4px;
-  }
-
-  .admin-panel label:first-of-type {
-    margin-top: 0;
-  }
-
-  .admin-section-title {
-    font-size: 12px;
+  .typed-ghost {
+    margin-top: 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
     color: var(--text-dimmer);
-    margin: 18px 0 2px;
-    border-top: 1px solid var(--line);
-    padding-top: 14px;
+    letter-spacing: 0.08em;
+    min-height: 20px;
+    transition: color 0.15s;
   }
+  .typed-ghost.no-match { color: #d98a8a; }
 
-  .admin-section-title:first-of-type {
-    border-top: none;
-    padding-top: 0;
-    margin-top: 0;
+  @keyframes flash-out {
+    0%   { opacity: 1; }
+    60%  { opacity: 0.15; }
+    100% { opacity: 0; }
   }
+  .card.navigating { animation: flash-out 0.35s ease-out forwards; }
+  @media (prefers-reduced-motion: reduce) { .card { transition: none !important; } }
 </style>
 </head>
 <body>
 
+<div class="blossom-tree" id="blossom-tree" aria-hidden="true"></div>
+
 <div class="stage" id="stage">
   <div class="card" id="card">
     <div class="card-inner">
-      <div class="avatar-ring" style="cursor:pointer;">
-        <a href="/home" style="display:block;width:100%;height:100%;border-radius:50%;text-decoration:none;">
-          <div class="avatar" id="avatar" data-img-url="https://segs.lol/IEPPV1.png"><img src="https://segs.lol/IEPPV1.png" alt=""></div>
-        </a>
-      </div>
-      <h1 class="name">satori</h1>
 
-      <div class="links">
-        <a class="link-item" href="https://www.twitch.tv/satxris" target="_blank" rel="noopener" id="link-twitch">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.64 5.93H13.07V10.21H11.64M15.57 5.93H17V10.21H15.57M7 2L3.43 5.57V18.43H7.71V22L11.29 18.43H14.14L20.57 12V2M19.14 11.29L16.29 14.14H13.43L10.93 16.64V14.14H7.71V3.43H19.14Z"/></svg>
-          <span class="link-label">Twitch</span>
-        </a>
-        <a class="link-item" href="https://x.com/whossatori" target="_blank" rel="noopener" id="link-twitter">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          <span class="link-label">Twitter</span>
-        </a>
-        <a class="link-item" href="https://www.tiktok.com/@whossatorii" target="_blank" rel="noopener" id="link-tiktok">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6c0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64c0 3.33 2.76 5.7 5.69 5.7c3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.32 1.39V7.3s-1.88.09-3.26-1.48z"/></svg>
-          <span class="link-label">TikTok</span>
-        </a>
-        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener" id="link-throne">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16L3 5L8.5 10L12 4L15.5 10L21 5L19 16H5M19 19C19 19.5 18.5 20 18 20H6C5.5 20 5 19.5 5 19V18H19V19Z"/></svg>
-          <span class="link-label">Throne</span>
-        </a>
-        <a class="link-item" href="https://throne.com/whossatori" target="_blank" rel="noopener" id="link-tips">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
-          <span class="link-label">Tips</span>
-        </a>
-      </div>
-
-      <a class="discord-widget" href="https://discord.gg/KNcRAUFhv3" target="_blank" rel="noopener" id="discord-widget">
-        <div class="discord-icon" id="discord-icon">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.79 19.79 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.245.198.373.292a.077.077 0 0 1-.006.128a12.299 12.299 0 0 1-1.873.892a.076.076 0 0 0-.04.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.876 19.876 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.06.06 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.955 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z"/></svg>
-        </div>
-        <div class="discord-info">
-          <p class="discord-name" id="discord-name">loading server...</p>
-          <div class="discord-stats">
-            <span class="status-dot" id="status-dot"></span>
-            <span id="discord-stats-text">connecting</span>
-          </div>
-        </div>
-        <span class="discord-join">join</span>
+      <a class="back-link" href="/">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        back
       </a>
-    </div>
-  </div>
-</div>
 
-<div class="bonsai-corner" id="bonsai" aria-hidden="true"></div>
+      <ul class="cmd-list" id="cmd-list">
+        <li data-cmd="japan"  data-url="/jp">
+          <span class="cmd-keyword">japan</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">travel & places</span>
+        </li>
+        <li data-cmd="github" data-url="/git">
+          <span class="cmd-keyword">github</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">code & projects</span>
+        </li>
+        <li data-cmd="anime"  data-url="/anime">
+          <span class="cmd-keyword">anime</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">anime list</span>
+        </li>
+        <li data-cmd="movies" data-url="/movies">
+          <span class="cmd-keyword">movies</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">film diary</span>
+        </li>
+        <li data-cmd="music"  data-url="/music">
+          <span class="cmd-keyword">music</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">what i'm listening to</span>
+        </li>
+      </ul>
 
-<div class="admin-overlay" id="password-overlay">
-  <div class="admin-box">
-    <h2>enter password</h2>
-    <input type="password" id="password-input" autocomplete="off" placeholder="password">
-    <p class="admin-error" id="password-error">incorrect password</p>
-    <div class="admin-btn-row">
-      <button class="admin-btn" id="password-cancel">cancel</button>
-      <button class="admin-btn primary" id="password-submit">unlock</button>
-    </div>
-  </div>
-</div>
-
-<div class="admin-overlay" id="admin-overlay">
-  <div class="admin-box admin-panel">
-    <h2>site editor</h2>
-
-    <p class="admin-section-title">profile</p>
-    <label for="edit-avatar">avatar image url</label>
-    <input type="text" id="edit-avatar" placeholder="https://...">
-
-    <p class="admin-section-title">links</p>
-    <label for="edit-twitch">twitch url</label>
-    <input type="text" id="edit-twitch">
-    <label for="edit-twitter">twitter url</label>
-    <input type="text" id="edit-twitter">
-    <label for="edit-tiktok">tiktok url</label>
-    <input type="text" id="edit-tiktok">
-    <label for="edit-throne">throne url</label>
-    <input type="text" id="edit-throne">
-    <label for="edit-tips">tips url</label>
-    <input type="text" id="edit-tips">
-
-    <p class="admin-section-title">discord</p>
-    <label for="edit-discord-id">server id</label>
-    <input type="text" id="edit-discord-id">
-    <label for="edit-discord-invite">invite link</label>
-    <input type="text" id="edit-discord-invite" placeholder="https://discord.gg/...">
-
-    <p class="admin-section-title">site</p>
-    <label for="edit-favicon">tab icon url</label>
-    <input type="text" id="edit-favicon" placeholder="https://...">
-
-    <div class="admin-btn-row">
-      <button class="admin-btn" id="admin-close">close</button>
-      <button class="admin-btn primary" id="admin-apply">apply preview</button>
-    </div>
-    <div class="admin-btn-row">
-      <button class="admin-btn primary" id="admin-download" style="width:100%;">download updated site</button>
+      <div class="typed-ghost" id="typed-ghost"></div>
     </div>
   </div>
 </div>
 
 <script>
-  const card = document.getElementById('card');
-  const stage = document.getElementById('stage');
-  const maxTilt = 6; // degrees
-  const maxLift = -6; // px translateY on hover
+// ── card tilt ──────────────────────────────────────────────────
+const card  = document.getElementById('card');
+const stage = document.getElementById('stage');
+stage.addEventListener('mousemove', (e) => {
+  const rect = card.getBoundingClientRect();
+  const dx = ((e.clientX - rect.left) / rect.width  - 0.5) * 2;
+  const dy = ((e.clientY - rect.top)  / rect.height - 0.5) * 2;
+  card.style.transform = `rotateX(${-dy*6}deg) rotateY(${dx*6}deg) translateY(-6px) scale(1.008)`;
+});
+stage.addEventListener('mouseenter', () => card.classList.add('hovered'));
+stage.addEventListener('mouseleave', () => {
+  card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
+  card.classList.remove('hovered');
+});
 
-  function handleMove(e) {
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
+// ── keypress routing ───────────────────────────────────────────
+const COMMANDS = {
+  japan: '/jp', github: '/git', anime: '/anime', movies: '/movies', music: '/music',
+};
+const items    = Array.from(document.querySelectorAll('#cmd-list li'));
+const ghost    = document.getElementById('typed-ghost');
+let keyBuffer  = '';
+let clearTimer = null;
 
-    const dx = (x - cx) / cx;   // -1 to 1
-    const dy = (y - cy) / cy;   // -1 to 1
+function resetBuffer() {
+  keyBuffer = '';
+  ghost.textContent = '';
+  ghost.classList.remove('no-match');
+  items.forEach(li => li.classList.remove('active'));
+}
+function navigate(url) {
+  card.classList.add('navigating');
+  setTimeout(() => { window.location.href = url; }, 320);
+}
+document.addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.key === 'Escape') { resetBuffer(); return; }
+  if (e.key === 'Backspace') { keyBuffer = keyBuffer.slice(0, -1); }
+  else if (e.key.length === 1) { keyBuffer += e.key.toLowerCase(); }
+  else return;
 
-    const rotateY = dx * maxTilt;
-    const rotateX = -dy * maxTilt;
+  clearTimeout(clearTimer);
+  clearTimer = setTimeout(resetBuffer, 1200);
+  ghost.textContent = keyBuffer;
 
-    card.style.transform =
-      `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${maxLift}px) scale(1.008)`;
+  if (COMMANDS[keyBuffer]) { navigate(COMMANDS[keyBuffer]); return; }
+
+  const matches = items.filter(li => li.dataset.cmd.startsWith(keyBuffer));
+  items.forEach(li => li.classList.toggle('active', matches.includes(li)));
+  if (matches.length === 0) {
+    ghost.classList.add('no-match');
+    clearTimeout(clearTimer);
+    clearTimer = setTimeout(resetBuffer, 600);
+  } else {
+    ghost.classList.remove('no-match');
+  }
+});
+items.forEach(li => li.addEventListener('click', () => navigate(li.dataset.url)));
+
+// ── cherry blossom tree (cbonsai style, cherry blossom shaped) ──
+const treeEl = document.getElementById('blossom-tree');
+
+const GRID_W = 58;
+const GRID_H = 42;
+
+let grid, blossomCells;
+
+function makeGrid() {
+  const g = [];
+  for (let y = 0; y < GRID_H; y++) g.push(new Array(GRID_W).fill(' '));
+  return g;
+}
+
+function setCell(x, y, ch, cls) {
+  if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
+  // don't overwrite blossoms with branches
+  const existing = grid[y][x];
+  if (typeof existing === 'string' && existing.includes('blossom')) return;
+  grid[y][x] = cls ? `<span class="${cls}">${ch}</span>` : ch;
+  if (cls && cls.startsWith('blossom')) blossomCells.push({ x, y });
+}
+
+// Simple seeded RNG
+let rngSeed = 137;
+function rand() {
+  rngSeed = (rngSeed * 1664525 + 1013904223) & 0xffffffff;
+  return (rngSeed >>> 0) / 0xffffffff;
+}
+
+// Draw a straight segment from (x1,y1) toward direction using Bresenham-ish
+function drawBranch(x, y, dx, dy, len, cls) {
+  for (let i = 0; i < len; i++) {
+    const nx = Math.round(x + dx * i);
+    const ny = Math.round(y + dy * i);
+    let ch;
+    if (Math.abs(dx) < 0.1)      ch = '|';
+    else if (Math.abs(dy) < 0.1) ch = '_';
+    else if (dx > 0 && dy < 0)   ch = '/';
+    else if (dx < 0 && dy < 0)   ch = '\\';
+    else if (dx > 0 && dy > 0)   ch = '\\';
+    else                          ch = '/';
+    setCell(nx, ny, ch, cls);
+  }
+}
+
+// Place a blossom cluster centred at (cx, cy) with radius r
+function placeBlossom(cx, cy, r) {
+  const offsets = [];
+  for (let ly = -r; ly <= r; ly++) {
+    for (let lx = -r * 2; lx <= r * 2; lx++) {
+      // Oval shape — wider than tall, cherry blossom canopy
+      const dist = Math.sqrt((lx / (r * 2.1)) ** 2 + (ly / (r * 0.85)) ** 2);
+      if (dist <= 1) offsets.push([lx, ly]);
+    }
+  }
+  for (const [lx, ly] of offsets) {
+    if (rand() < 0.72) {
+      let cls, ch;
+      const v = rand();
+      if (v < 0.15)      { cls = 'blossom-deep'; ch = rand() < 0.5 ? '*' : 'o'; }
+      else if (v < 0.55) { cls = 'blossom';      ch = rand() < 0.4 ? '*' : rand() < 0.5 ? '.' : 'o'; }
+      else               { cls = 'blossom-pale';  ch = rand() < 0.6 ? '.' : '*'; }
+      setCell(cx + lx, cy + ly, ch, cls);
+    }
+  }
+}
+
+function initTree() {
+  rngSeed = 137;
+  grid = makeGrid();
+  blossomCells = [];
+
+  // ── Trunk ──
+  // Starts at bottom-left, curves upward
+  const trunkBaseX = 18;
+  const trunkBaseY = GRID_H - 1;
+  const trunkHeight = 22;
+
+  // Main trunk — slight rightward curve at the top
+  for (let i = 0; i < trunkHeight; i++) {
+    const t = i / trunkHeight;
+    const wobble = Math.round(t * t * 2); // curves right near top
+    const x = trunkBaseX + wobble;
+    const y = trunkBaseY - i;
+    const ch = wobble > 0 && i === trunkHeight - 1 ? '/' : '|';
+    setCell(x, y, ch, 'trunk');
+    // Double-wide trunk at base
+    if (i < 8) setCell(x + 1, y, ch, 'trunk');
+    if (i < 4) setCell(x - 1, y, ch, 'root');
   }
 
-  function resetTilt() {
-    card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
-    card.classList.remove('hovered');
+  // ── Roots / base ──
+  // Flared root lines at bottom
+  const rx = trunkBaseX, ry = trunkBaseY;
+  for (let i = 1; i <= 5; i++) {
+    setCell(rx - i, ry, '\\', 'root');
+    setCell(rx + 1 + i, ry, '/', 'root');
+  }
+  setCell(rx - 6, ry, '_', 'root');
+  setCell(rx + 7, ry, '_', 'root');
+  // Second root row
+  for (let i = 1; i <= 3; i++) {
+    setCell(rx - i, ry - 1, '\\', 'root');
+    setCell(rx + 1 + i, ry - 1, '/', 'root');
   }
 
-  stage.addEventListener('mousemove', handleMove);
-  stage.addEventListener('mouseenter', () => card.classList.add('hovered'));
-  stage.addEventListener('mouseleave', resetTilt);
+  // ── Main scaffold branches ──
+  // These define the overall cherry blossom silhouette
+  const tipX = trunkBaseX + 2;
+  const tipY = trunkBaseY - trunkHeight;
 
-  // touch devices: skip tilt, just keep it static
-  if (window.matchMedia('(hover: none)').matches) {
-    stage.removeEventListener('mousemove', handleMove);
-  }
+  // Branch definitions: [startOffX, startOffY, angle°, length, subBranches]
+  const scaffolds = [
+    // Left large branch
+    { sx: -1, sy: 6,  angle: 145, len: 13 },
+    { sx: -1, sy: 10, angle: 155, len: 10 },
+    // Right large branch
+    { sx: 2,  sy: 5,  angle: 35,  len: 14 },
+    { sx: 2,  sy: 9,  angle: 25,  len: 11 },
+    // Top branches
+    { sx: 1,  sy: 0,  angle: 100, len: 9  },
+    { sx: 1,  sy: 0,  angle: 80,  len: 9  },
+    { sx: 0,  sy: 2,  angle: 120, len: 8  },
+    { sx: 2,  sy: 2,  angle: 60,  len: 8  },
+    // Mid branches
+    { sx: 0,  sy: 7,  angle: 130, len: 7  },
+    { sx: 2,  sy: 7,  angle: 50,  len: 7  },
+  ];
 
-  // Discord live widget data
-  let DISCORD_SERVER_ID = '1362914541369037060';
-  // if the admin sets a custom invite link, the widget API's own
-  // instant_invite should not be allowed to overwrite it
-  let manualInviteOverride = "https://discord.gg/KNcRAUFhv3";
+  const branchTips = [];
+  for (const sc of scaffolds) {
+    const startX = tipX + sc.sx;
+    const startY = tipY + sc.sy;
+    const rad    = (sc.angle * Math.PI) / 180;
+    const dx     = Math.cos(rad);
+    const dy     = -Math.sin(rad); // screen y is inverted
 
-  const DISCORD_CACHE_KEY = 'discord_widget_cache_v1';
-  const DISCORD_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+    // choose trunk or branch-thin based on length
+    const cls = sc.len >= 11 ? 'branch' : 'branch-thin';
+    drawBranch(startX, startY, dx, dy, sc.len, cls);
 
-  function readDiscordCache() {
-    try {
-      const raw = localStorage.getItem(DISCORD_CACHE_KEY);
-      if (!raw) return null;
-      const cached = JSON.parse(raw);
-      if (!cached || typeof cached.fetchedAt !== 'number') return null;
-      if (Date.now() - cached.fetchedAt > DISCORD_CACHE_TTL_MS) return null;
-      return cached.data || null;
-    } catch (err) {
-      return null;
+    const endX = Math.round(startX + dx * sc.len);
+    const endY = Math.round(startY + dy * sc.len);
+    branchTips.push({ x: endX, y: endY, r: Math.floor(sc.len / 3.2) + 2 });
+
+    // Add 1–2 sub-branches off each scaffold
+    for (let s = 0; s < 2; s++) {
+      if (rand() < 0.65) {
+        const split  = 0.4 + rand() * 0.4;
+        const bx     = Math.round(startX + dx * sc.len * split);
+        const by     = Math.round(startY + dy * sc.len * split);
+        const spread = (rand() < 0.5 ? 1 : -1) * (25 + rand() * 30);
+        const brad   = ((sc.angle + spread) * Math.PI) / 180;
+        const subLen = Math.floor(sc.len * (0.4 + rand() * 0.3));
+        drawBranch(bx, by, Math.cos(brad), -Math.sin(brad), subLen, 'branch-thin');
+        const ex = Math.round(bx + Math.cos(brad) * subLen);
+        const ey = Math.round(by - Math.sin(brad) * subLen);
+        branchTips.push({ x: ex, y: ey, r: 2 });
+      }
     }
   }
 
-  function writeDiscordCache(data) {
-    try {
-      localStorage.setItem(DISCORD_CACHE_KEY, JSON.stringify({
-        fetchedAt: Date.now(),
-        data,
-      }));
-    } catch (err) {
-      // localStorage unavailable (private mode, quota, etc) — fine to skip caching
-    }
+  // ── Blossom clusters at all tips ──
+  for (const tip of branchTips) {
+    placeBlossom(tip.x, tip.y, tip.r);
   }
-
-  function renderDiscordWidget(data) {
-    const nameEl = document.getElementById('discord-name');
-    const statsEl = document.getElementById('discord-stats-text');
-    const dotEl = document.getElementById('status-dot');
-    const iconEl = document.getElementById('discord-icon');
-
-    const guild = data.guild || {};
-    nameEl.textContent = guild.name || 'discord server';
-
-    const onlineCount = data.approximate_presence_count ?? 0;
-    const memberCount = data.approximate_member_count ?? 0;
-    statsEl.textContent = `${onlineCount} online · ${memberCount} members`;
-    dotEl.style.background = onlineCount > 0 ? '#fff' : '#555';
-
-    if (guild.id && guild.icon) {
-      // profile.icon_hash carries the "a_" prefix that marks an animated
-      // icon; guild.icon strips it, so check the prefixed version to
-      // decide whether to request the animated (gif) or static (png) asset
-      const profileHash = (data.profile && data.profile.icon_hash) || '';
-      const isAnimated = profileHash.startsWith('a_') || guild.icon.startsWith('a_');
-      const ext = isAnimated ? 'gif' : 'png';
-      const guildIcon = `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${ext}`;
-      iconEl.innerHTML = `<img src="${guildIcon}" alt="" style="width:100%;height:100%;border-radius:10px;object-fit:cover;">`;
-    }
+  // Extra dense canopy fill in the upper region
+  for (let pass = 0; pass < 6; pass++) {
+    const cx = tipX + Math.round((rand() - 0.45) * 22);
+    const cy = tipY - Math.round(rand() * 8);
+    placeBlossom(cx, cy, 3 + Math.floor(rand() * 3));
   }
+}
 
-  async function loadDiscordWidget() {
-    const nameEl = document.getElementById('discord-name');
-    const statsEl = document.getElementById('discord-stats-text');
-    const dotEl = document.getElementById('status-dot');
-    const widgetEl = document.getElementById('discord-widget');
+function renderTree() {
+  treeEl.innerHTML = grid.map(r => r.join('')).join('\n');
+}
 
-    // serve cached data immediately if it's still fresh, skip the network entirely
-    const cached = readDiscordCache();
-    if (cached) {
-      renderDiscordWidget(cached);
-      return;
-    }
+initTree();
+renderTree();
 
-    const inviteCode = (manualInviteOverride || widgetEl.href || '')
-      .split('/').filter(Boolean).pop();
+// ── drifting petal characters ──────────────────────────────────
+const PETAL_CHARS  = ['*', '.', 'o', "'", ','];
+const PETAL_COUNT  = 55;
+const PETAL_COLORS = [
+  'hsl(345,100%,88%)',  // soft pink
+  'hsl(350,100%,82%)',  // medium pink
+  'hsl(340,100%,78%)',  // deeper pink
+  'hsl(355,100%,92%)',  // pale blush
+  'hsl(320, 80%,85%)',  // lilac-pink
+];
 
-    try {
-      if (!inviteCode) throw new Error('no invite code available');
+function getBlossomOrigin() {
+  if (!blossomCells.length) return null;
+  const cell  = blossomCells[Math.floor(Math.random() * blossomCells.length)];
+  const charW = 7.8;
+  const charH = 14.95;
+  const rect  = treeEl.getBoundingClientRect();
+  return {
+    x: rect.left + cell.x * charW + (Math.random() - 0.5) * 20,
+    y: rect.top  + cell.y * charH + (Math.random() - 0.5) * 14,
+  };
+}
 
-      const res = await fetch(`https://discord.com/api/v9/invites/${inviteCode}?with_counts=true`);
-      if (!res.ok) throw new Error('invite fetch failed');
-      const data = await res.json();
+function spawnPetal(initialDelay) {
+  const el  = document.createElement('span');
+  el.className = 'petal';
+  el.textContent = PETAL_CHARS[Math.floor(Math.random() * PETAL_CHARS.length)];
 
-      renderDiscordWidget(data);
-      writeDiscordCache(data);
-    } catch (err) {
-      nameEl.textContent = 'server';
-      statsEl.textContent = 'click to join';
-      dotEl.style.background = '#555';
-    }
-  }
-
-  loadDiscordWidget(); // fetch on page load, not just when the admin changes the server id
-
-  // Bonsai growth simulation — recursive branch algorithm modeled on cbonsai
-  // (jallbrit/cbonsai): a trunk grows upward with gentle wobble, throws off
-  // left/right shoots partway up, and any branch that runs out of life
-  // sprouts a cluster of leaves around its tip.
-
-  const bonsaiEl = document.getElementById('bonsai');
-
-  const GRID_W = 28;
-  const GRID_H = 14;
-  const BASE_LIFE = 24;
-
-  let grid, branches, rngSeed, growTimer;
-
-  function rand() {
-    rngSeed = (rngSeed * 9301 + 49297) % 233280;
-    return rngSeed / 233280;
-  }
-
-  function makeGrid() {
-    const g = [];
-    for (let y = 0; y < GRID_H; y++) g.push(new Array(GRID_W).fill(' '));
-    return g;
-  }
-
-  let leafCells = [];
-  let fallingLeaves = [];
-
-  function setCell(x, y, ch, cls) {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = cls ? `<span class="${cls}">${ch}</span>` : ch;
-    if (cls === 'leaf') leafCells.push({ x, y });
-  }
-
-  const TRUNK = 0, SHOOT_LEFT = 1, SHOOT_RIGHT = 2;
-
-  function pushBranch(x, y, type, lifeLeft) {
-    branches.push({ x, y, type, life: lifeLeft, age: 0, shot: false });
-  }
-
-  function stepDirection(b) {
-    if (b.type === TRUNK) {
-      const wobbleChance = b.age < 4 ? 0.12 : 0.32;
-      const r = rand();
-      let dx = 0;
-      if (r < wobbleChance / 2) dx = -1;
-      else if (r < wobbleChance) dx = 1;
-      const ch = dx === 0 ? '|' : (dx < 0 ? '\\' : '/');
-      return { dx, dy: -1, ch };
-    } else if (b.type === SHOOT_LEFT) {
-      const dy = rand() < 0.4 ? -1 : 0;
-      return { dx: -1, dy, ch: dy < 0 ? '\\' : '_' };
+  function launch(origin) {
+    // Always start from the tree on the left
+    if (origin) {
+      el.style.left = origin.x + 'px';
+      el.style.top  = origin.y + 'px';
     } else {
-      const dy = rand() < 0.4 ? -1 : 0;
-      return { dx: 1, dy, ch: dy < 0 ? '/' : '_' };
-    }
-  }
-
-  function stepBranch(b) {
-    if (b.life <= 0) return;
-    b.age++;
-    b.life--;
-
-    const { dx, dy, ch } = stepDirection(b);
-
-    if (b.type === TRUNK && !b.shot && b.life > 6 && b.age >= 3) {
-      const forceChance = (b.age === 5 || b.age === 9) ? 0.8 : 0.15;
-      if (rand() < forceChance) {
-        pushBranch(b.x, b.y, rand() < 0.5 ? SHOOT_LEFT : SHOOT_RIGHT, Math.max(4, Math.floor(b.life * 0.65)));
-        b.shot = true;
-        if (rand() < 0.5) b.shot = false;
-      }
+      // Fallback: left 10% of screen
+      el.style.left = (Math.random() * window.innerWidth * 0.18) + 'px';
+      el.style.top  = (Math.random() * window.innerHeight * 0.75) + 'px';
     }
 
-    setCell(b.x, b.y, ch, 'trunk');
+    // Drift rightward across the whole screen, falling gently
+    const driftX   = window.innerWidth * (0.55 + Math.random() * 0.55); // travels 55–110% of screen width
+    const driftY   = window.innerHeight * (0.05 + Math.random() * 0.6); // gentle to heavy fall
+    const rotStart = (Math.random() - 0.5) * 40;
+    const rotEnd   = rotStart + (Math.random() - 0.5) * 200;
+    const duration = 7000 + Math.random() * 12000;
+    const opacity  = 0.55 + Math.random() * 0.45;
+    const color    = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
+    const size     = 10 + Math.random() * 5;
 
-    b.x += dx;
-    b.y += dy;
+    el.style.setProperty('--drift-x',       driftX + 'px');
+    el.style.setProperty('--drift-y',       driftY + 'px');
+    el.style.setProperty('--rot-start',     rotStart + 'deg');
+    el.style.setProperty('--rot-end',       rotEnd + 'deg');
+    el.style.setProperty('--petal-opacity', opacity);
+    el.style.animationDuration = duration + 'ms';
+    el.style.animationDelay   = (initialDelay != null ? initialDelay : 0) + 'ms';
+    el.style.fontSize = size + 'px';
+    el.style.color    = color;
+    el.style.animationName = 'none'; // reset
+    void el.offsetWidth;             // force reflow
+    el.style.animationName = 'drift';
 
-    if (b.life <= 2 || b.y <= 1) {
-      const leafSpread = [[0,0],[-1,0],[1,0],[0,-1],[-1,-1],[1,-1],[0,1],[1,1],[-1,1]];
-      for (const [lx, ly] of leafSpread) {
-        if (rand() < 0.6) setCell(b.x + lx, b.y + ly, '&', 'leaf');
-      }
-    }
+    // When done, respawn from tree
+    el.addEventListener('animationend', () => {
+      el.style.animationDelay = '0ms';
+      // small random pause before next flight
+      setTimeout(() => launch(getBlossomOrigin()), 200 + Math.random() * 1800);
+    }, { once: true });
   }
 
-  function initTree() {
-    rngSeed = (Date.now() % 100000) + 41;
-    grid = makeGrid();
-    branches = [];
-    leafCells = [];
-    fallingLeaves = [];
-    pushBranch(Math.floor(GRID_W / 2), GRID_H - 3, TRUNK, BASE_LIFE);
-    const rimStr = ' '.repeat(2) + '_'.repeat(GRID_W - 4) + ' '.repeat(2);
-    for (let i = 0; i < rimStr.length; i++) setCell(i, GRID_H - 3, rimStr[i], 'pot');
-    const bowlInner = Math.max(2, GRID_W - 8);
-    const bowlPad   = Math.floor((GRID_W - bowlInner - 2) / 2);
-    const bowlStr   = ' '.repeat(bowlPad) + '\\' + '_'.repeat(bowlInner) + '/' + ' '.repeat(bowlPad);
-    for (let i = 0; i < bowlStr.length; i++) setCell(i, GRID_H - 2, bowlStr[i], 'pot');
-  }
+  document.body.appendChild(el);
+  launch(getBlossomOrigin());
+  return el;
+}
 
-  function renderGrid() {
-    const composite = grid.map(row => row.slice());
-    for (const leaf of fallingLeaves) {
-      if (leaf.y >= 0 && leaf.y < GRID_H && leaf.x >= 0 && leaf.x < GRID_W) {
-        composite[leaf.y][leaf.x] = `<span class="leaf">&</span>`;
-      }
-    }
-    bonsaiEl.innerHTML = composite.map(row => row.join('')).join('\n');
-  }
-
-  function growStep() {
-    if (!branches.length) return false;
-    const stillAlive = [];
-    for (const b of branches) {
-      if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) {
-        stepBranch(b);
-        if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) stillAlive.push(b);
-      }
-    }
-    branches = stillAlive;
-    renderGrid();
-    return branches.length > 0;
-  }
-
-  const potRowY = () => GRID_H - 1;
-
-  function detachOneLeaf() {
-    if (!leafCells.length) return false;
-    const idx = Math.floor(rand() * leafCells.length);
-    const { x, y } = leafCells.splice(idx, 1)[0];
-    setCell(x, y, ' ', null);
-    fallingLeaves.push({ x, y, settleDelay: Math.floor(rand() * 3) });
-    renderGrid();
-    return true;
-  }
-
-  function tickFallingLeaves() {
-    if (!fallingLeaves.length) return false;
-    const stillFalling = [];
-    for (const leaf of fallingLeaves) {
-      if (leaf.settleDelay > 0) {
-        leaf.settleDelay--;
-        stillFalling.push(leaf);
-        continue;
-      }
-      const nextY = leaf.y + 1;
-      if (nextY >= potRowY()) {
-        // landed on the pot rim, leaf disappears
-        continue;
-      }
-      // gentle side drift while falling
-      let nextX = leaf.x;
-      const drift = rand();
-      if (drift < 0.18) nextX -= 1;
-      else if (drift < 0.36) nextX += 1;
-      nextX = Math.max(1, Math.min(GRID_W - 2, nextX));
-
-      leaf.x = nextX;
-      leaf.y = nextY;
-      stillFalling.push(leaf);
-    }
-    fallingLeaves = stillFalling;
-    renderGrid();
-    return fallingLeaves.length > 0 || leafCells.length > 0;
-  }
-
-  const GROW_STEP_MS = 3000;
-  const HOLD_AFTER_GROWTH_MS = 6000;
-  const PAUSE_BEFORE_REGROW_MS = 4000;
-
-  function runCycle() {
-    bonsaiEl.style.opacity = '0';
-    setTimeout(() => {
-      initTree();
-      renderGrid();
-      bonsaiEl.style.opacity = '0.85';
-
-      growTimer = setInterval(() => {
-        const stillGrowing = growStep();
-        if (!stillGrowing) {
-          clearInterval(growTimer);
-          setTimeout(startLeafFall, HOLD_AFTER_GROWTH_MS);
-        }
-      }, GROW_STEP_MS);
-    }, 500);
-  }
-
-  const LEAF_DETACH_INTERVAL_MS = 1400;
-  const LEAF_FALL_TICK_MS = 350;
-
-  let detachTimer, fallTimer;
-
-  function startLeafFall() {
-    detachTimer = setInterval(() => {
-      const detached = detachOneLeaf();
-      if (!detached) clearInterval(detachTimer);
-    }, LEAF_DETACH_INTERVAL_MS);
-
-    fallTimer = setInterval(() => {
-      const stillActive = tickFallingLeaves();
-      if (!stillActive) {
-        clearInterval(detachTimer);
-        clearInterval(fallTimer);
-        setTimeout(runCycle, PAUSE_BEFORE_REGROW_MS);
-      }
-    }, LEAF_FALL_TICK_MS);
-  }
-
-  function startGrowth() {
-    runCycle();
-  }
-
-  startGrowth();
-
-  // ---------------------------------------------------------------
-  // Hidden admin panel
-  // Trigger sequence: w w s s a d a d s a t o
-  // Change ADMIN_PASSWORD below to set your real password.
-  // ---------------------------------------------------------------
-
-  const ADMIN_PASSWORD = 'reg_is_dumb';
-  const TRIGGER_SEQUENCE = ['w','w','s','s','a','d','a','d','s','a','t','o'];
-  let keyBuffer = [];
-
-  document.addEventListener('keydown', (e) => {
-    // ignore keystrokes while typing into an input/textarea
-    const tag = document.activeElement.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-
-    const key = e.key.toLowerCase();
-    keyBuffer.push(key);
-    if (keyBuffer.length > TRIGGER_SEQUENCE.length) keyBuffer.shift();
-
-    if (keyBuffer.length === TRIGGER_SEQUENCE.length &&
-        keyBuffer.every((k, i) => k === TRIGGER_SEQUENCE[i])) {
-      keyBuffer = [];
-      openPasswordPrompt();
-    }
-  });
-
-  const passwordOverlay = document.getElementById('password-overlay');
-  const passwordInput = document.getElementById('password-input');
-  const passwordError = document.getElementById('password-error');
-  const adminOverlay = document.getElementById('admin-overlay');
-
-  function openPasswordPrompt() {
-    passwordInput.value = '';
-    passwordError.style.display = 'none';
-    passwordOverlay.classList.add('visible');
-    setTimeout(() => passwordInput.focus(), 50);
-  }
-
-  function closePasswordPrompt() {
-    passwordOverlay.classList.remove('visible');
-  }
-
-  document.getElementById('password-cancel').addEventListener('click', closePasswordPrompt);
-
-  function submitPassword() {
-    if (passwordInput.value === ADMIN_PASSWORD) {
-      closePasswordPrompt();
-      openAdminPanel();
-    } else {
-      passwordError.style.display = 'block';
-      passwordInput.value = '';
-      passwordInput.focus();
-    }
-  }
-
-  document.getElementById('password-submit').addEventListener('click', submitPassword);
-  passwordInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') submitPassword();
-    if (e.key === 'Escape') closePasswordPrompt();
-  });
-
-  function openAdminPanel() {
-    document.getElementById('edit-avatar').value =
-      document.getElementById('avatar').dataset.imgUrl || '';
-    document.getElementById('edit-twitch').value = document.getElementById('link-twitch').href;
-    document.getElementById('edit-twitter').value = document.getElementById('link-twitter').href;
-    document.getElementById('edit-tiktok').value = document.getElementById('link-tiktok').href;
-    document.getElementById('edit-throne').value = document.getElementById('link-throne').href;
-    document.getElementById('edit-tips').value = document.getElementById('link-tips').href;
-    document.getElementById('edit-discord-id').value = DISCORD_SERVER_ID;
-    document.getElementById('edit-discord-invite').value =
-      manualInviteOverride || document.getElementById('discord-widget').href;
-    document.getElementById('edit-favicon').value = document.getElementById('favicon').href;
-    adminOverlay.classList.add('visible');
-  }
-
-  document.getElementById('admin-close').addEventListener('click', () => {
-    adminOverlay.classList.remove('visible');
-  });
-
-  function applyAdminChanges() {
-    const avatarUrl = document.getElementById('edit-avatar').value.trim();
-    const avatarEl = document.getElementById('avatar');
-    if (avatarUrl) {
-      avatarEl.innerHTML = `<img src="${avatarUrl}" alt="">`;
-      avatarEl.dataset.imgUrl = avatarUrl;
-    } else {
-      avatarEl.innerHTML = 'satori';
-      avatarEl.dataset.imgUrl = 'https://segs.lol/IEPPV1.png';
-    }
-
-    document.getElementById('link-twitch').href = document.getElementById('edit-twitch').value.trim();
-    document.getElementById('link-twitter').href = document.getElementById('edit-twitter').value.trim();
-    document.getElementById('link-tiktok').href = document.getElementById('edit-tiktok').value.trim();
-    document.getElementById('link-throne').href = document.getElementById('edit-throne').value.trim();
-    document.getElementById('link-tips').href = document.getElementById('edit-tips').value.trim();
-
-    const newServerId = document.getElementById('edit-discord-id').value.trim();
-    if (newServerId && newServerId !== DISCORD_SERVER_ID) {
-      DISCORD_SERVER_ID = newServerId;
-      loadDiscordWidget();
-    }
-
-    const newInvite = document.getElementById('edit-discord-invite').value.trim();
-    if (newInvite) {
-      manualInviteOverride = newInvite;
-      document.getElementById('discord-widget').href = newInvite;
-    }
-
-    const newFavicon = document.getElementById('edit-favicon').value.trim();
-    if (newFavicon) {
-      document.getElementById('favicon').href = newFavicon;
-    }
-  }
-
-  document.getElementById('admin-apply').addEventListener('click', applyAdminChanges);
-
-  async function downloadUpdatedSite() {
-    applyAdminChanges();
-
-    if (window.location.protocol === 'file:') {
-      alert('Export only works when the site is served over http/https (e.g. your live satos.cc site or the pages.dev preview) — not when opening the file directly from disk. Open the deployed site, unlock the editor there, then download.');
-      return;
-    }
-
-    try {
-      const res = await fetch(window.location.href);
-      let html = await res.text();
-
-      const avatarUrl = document.getElementById('edit-avatar').value.trim();
-      const twitch = document.getElementById('edit-twitch').value.trim();
-      const twitter = document.getElementById('edit-twitter').value.trim();
-      const tiktok = document.getElementById('edit-tiktok').value.trim();
-      const throneUrl = document.getElementById('edit-throne').value.trim();
-      const tips = document.getElementById('edit-tips').value.trim();
-      const discordId = document.getElementById('edit-discord-id').value.trim();
-      const discordInvite = document.getElementById('edit-discord-invite').value.trim();
-      const favicon = document.getElementById('edit-favicon').value.trim();
-
-      // patch avatar block specifically
-      html = html.replace(
-        /<div class="avatar" id="avatar"[^>]*>[\s\S]*?<\/div>/,
-        avatarUrl
-          ? `<div class="avatar" id="avatar" data-img-url="${avatarUrl}"><img src="${avatarUrl}" alt=""></div>`
-          : `<div class="avatar" id="avatar">satori</div>`
-      );
-
-      function patchHref(id, newHref) {
-        if (!newHref) return;
-        const re = new RegExp(`(id="${id}"[^>]*href=")[^"]*(")`);
-        const re2 = new RegExp(`(href=")[^"]*("[^>]*id="${id}")`);
-        if (re.test(html)) {
-          html = html.replace(re, `$1${newHref}$2`);
-        } else if (re2.test(html)) {
-          html = html.replace(re2, `$1${newHref}$2`);
-        }
-      }
-
-      patchHref('link-twitch', twitch);
-      patchHref('link-twitter', twitter);
-      patchHref('link-tiktok', tiktok);
-      patchHref('link-throne', throneUrl);
-      patchHref('link-tips', tips);
-      patchHref('discord-widget', discordInvite);
-
-      if (favicon) {
-        html = html.replace(
-          /<link rel="icon" id="favicon" href="[^"]*">/,
-          `<link rel="icon" id="favicon" href="${favicon}">`
-        );
-      }
-
-      if (discordId) {
-        html = html.replace(
-          /let DISCORD_SERVER_ID = '[^']*';/,
-          `let DISCORD_SERVER_ID = '${discordId}';`
-        );
-      }
-
-      if (discordInvite) {
-        html = html.replace(
-          /let manualInviteOverride = [^;]*;/,
-          `let manualInviteOverride = ${JSON.stringify(discordInvite)};`
-        );
-      }
-
-      const blob = new Blob([html], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'index.html';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      alert('Could not fetch the page source to export. Try again, or check the console for details.');
-      console.error(err);
-    }
-  }
-
-  document.getElementById('admin-download').addEventListener('click', downloadUpdatedSite);
-
-
-
+// Stagger initial spawns so they don't all appear at once
+for (let i = 0; i < PETAL_COUNT; i++) {
+  const delay = i < 12
+    ? -(Math.random() * 9000)        // first batch already mid-flight
+    : Math.random() * 6000;          // rest trickle in
+  spawnPetal(delay);
+}
 </script>
 
 </body>
