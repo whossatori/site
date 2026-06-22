@@ -703,7 +703,7 @@ function spawnPetal(initialDelay) {
     }, { once: true });
   }
 
-  document.body.appendChild(el);
+  document.getElementById('bg-layer').appendChild(el);
   launch(getBlossomOrigin());
   return el;
 }
