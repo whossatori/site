@@ -706,6 +706,58 @@ for (let i = 0; i < PETAL_COUNT; i++) {
     : Math.random() * 6000;
   spawnPetal(delay);
 }
+
+// ── seed petals at tree base ────────────────────────────────────
+// Pre-populate a natural scatter of petals on the floor around
+// the base of the tree so it doesn't look bare on first load.
+function seedFloorPetals() {
+  const rect   = treeEl.getBoundingClientRect();
+  // Spread petals from the left edge to ~60% of the tree width,
+  // clustered near the trunk with a few stragglers further right.
+  const cx     = rect.left + rect.width * 0.35; // rough trunk centre
+  const spread = rect.width * 1.1;              // scatter radius
+
+  const SEED_COUNT = 38;
+  for (let i = 0; i < SEED_COUNT; i++) {
+    // Gaussian-ish distribution: most near trunk, some further out
+    const u1 = Math.random(), u2 = Math.random();
+    const gauss = Math.sqrt(-2 * Math.log(u1 + 0.0001)) * Math.cos(2 * Math.PI * u2);
+    const x = cx + gauss * (spread * 0.3) + Math.random() * spread * 0.25;
+
+    if (x < 0 || x > window.innerWidth) continue;
+
+    // Bypass the 35% landing chance — seed directly and allow
+    // stacking up to 3 rows so the base looks naturally built up
+    // but not fully maxed out.
+    const col = getCol(x);
+    if (col.rows.length >= 3) continue;
+
+    const color = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
+
+    // Build the row element (same as landPetal but called directly)
+    const rowEl = document.createElement('div');
+    rowEl.style.cssText = 'display:flex; align-items:flex-end; justify-content:center; line-height:1;';
+    makeRowSpans(color).forEach(s => rowEl.appendChild(s));
+
+    let colEl = floorEl.querySelector(`[data-col="${Math.floor(x / COL_W)}"]`);
+    if (!colEl) {
+      colEl = document.createElement('div');
+      colEl.className = 'floor-col';
+      colEl.dataset.col = Math.floor(x / COL_W);
+      const jitter = (Math.random() - 0.5) * COL_W * 0.6;
+      colEl.style.left  = (col.baseX + jitter) + 'px';
+      colEl.style.width = (COL_W + Math.floor(Math.random() * 8)) + 'px';
+      floorEl.appendChild(colEl);
+    }
+
+    colEl.appendChild(rowEl);
+    // Give seed petals a head-start age so they erode naturally
+    col.rows.push({ el: rowEl, age: Math.floor(Math.random() * 8) });
+  }
+}
+
+// Run after a short delay so treeEl.getBoundingClientRect() is reliable
+setTimeout(seedFloorPetals, 100);
 </script>
 
 </body>
