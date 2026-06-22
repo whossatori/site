@@ -89,9 +89,10 @@
   /* ── card ── */
   .stage {
     position: fixed;
-    right: 9%;
+    /* centre the card in the space to the right of the tree (~380px wide) */
+    left: calc(380px + (100vw - 380px) / 2);
     top: 50%;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
     perspective: 1000px;
     width: 100%;
     max-width: 400px;
@@ -99,7 +100,10 @@
   }
 
   @media (max-width: 860px) {
-    .stage { right: 50%; transform: translate(50%, -50%); }
+    .stage {
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
     .blossom-tree { font-size: 10px; }
   }
 
