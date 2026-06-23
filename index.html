@@ -700,13 +700,17 @@
 
   startGrowth();
 
-  // ── type "home" to navigate ────────────────────────────────────
-  let homeBuffer = '';
+  // ── type page name to navigate ─────────────────────────────────
+  const NAV = { home:'/home', japan:'/jp', music:'/music', anime:'/anime', github:'/git', movies:'/movies', socials:'/' };
+  const MAX_LEN = Math.max(...Object.keys(NAV).map(k => k.length));
+  let navBuffer = '';
   document.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    homeBuffer += e.key.toLowerCase();
-    if (homeBuffer.length > 4) homeBuffer = homeBuffer.slice(-4);
-    if (homeBuffer === 'home') window.location.href = '/home';
+    if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
+    navBuffer += e.key.toLowerCase();
+    if (navBuffer.length > MAX_LEN) navBuffer = navBuffer.slice(-MAX_LEN);
+    for (const [word, url] of Object.entries(NAV)) {
+      if (navBuffer.endsWith(word)) { window.location.href = url; return; }
+    }
   });
 
 </script>
