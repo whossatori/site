@@ -145,6 +145,7 @@
     border: 1px solid var(--line);
     border-radius: 22px;
     padding: 36px 28px 28px;
+    height: 357px;
     text-align: center;
     transform-style: preserve-3d;
     backface-visibility: hidden;
@@ -185,13 +186,16 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    width: fit-content;
+    margin: 0 auto;
   }
 
   .cmd-list li {
-    display: flex;
-    align-items: baseline;
+    display: grid;
+    grid-template-columns: 16px 80px auto 80px;
+    align-items: center;
     border-radius: 10px;
-    padding: 9px 12px;
+    padding: 7px 12px;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s;
     border: 1px solid transparent;
@@ -205,17 +209,31 @@
 
   .cmd-list li.active .cmd-keyword { color: #fff; }
 
+  .cmd-petal {
+    font-size: 11px;
+    color: #ffb7c5;
+    text-shadow: 0 0 6px rgba(255,150,180,0.6);
+    opacity: 0;
+    transition: opacity 0.15s;
+    user-select: none;
+    text-align: center;
+  }
+
+  .cmd-list li:hover .cmd-petal,
+  .cmd-list li.active .cmd-petal {
+    opacity: 1;
+  }
+
   .cmd-keyword {
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 600;
     font-size: 15px;
     color: var(--text);
-    min-width: 80px;
-    text-align: left;
+    text-align: right;
     transition: color 0.15s;
   }
 
-  .cmd-sep   { color: var(--text-dimmer); margin: 0 12px; user-select: none; font-size: 13px; }
+  .cmd-sep   { color: var(--text-dimmer); margin: 0 42px; user-select: none; font-size: 13px; }
   .cmd-desc  { color: var(--text-dim); font-size: 13px; text-align: left; }
 
   .typed-ghost {
@@ -287,36 +305,47 @@
   <div class="card" id="card">
     <div class="card-inner">
 
-      <a class="back-link" href="/">
+      <a class="back-link" href="#" onclick="history.back(); return false;">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         back
       </a>
 
       <ul class="cmd-list" id="cmd-list">
         <li data-cmd="japan"  data-url="/jp">
+          <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">japan</span>
           <span class="cmd-sep">—</span>
           <span class="cmd-desc">language</span>
         </li>
         <li data-cmd="github" data-url="/git">
+          <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">github</span>
           <span class="cmd-sep">—</span>
           <span class="cmd-desc">projects</span>
         </li>
         <li data-cmd="anime"  data-url="/anime">
+          <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">anime</span>
           <span class="cmd-sep">—</span>
           <span class="cmd-desc">anilist</span>
         </li>
         <li data-cmd="movies" data-url="/movies">
+          <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">movies</span>
           <span class="cmd-sep">—</span>
           <span class="cmd-desc">ratings</span>
         </li>
         <li data-cmd="music"  data-url="/music">
+          <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">music</span>
           <span class="cmd-sep">—</span>
           <span class="cmd-desc">lastfm</span>
+        </li>
+        <li data-cmd="socials" data-url="/">
+          <span class="cmd-petal">✿</span>
+          <span class="cmd-keyword">socials</span>
+          <span class="cmd-sep">—</span>
+          <span class="cmd-desc">media</span>
         </li>
       </ul>
 
@@ -350,7 +379,7 @@ stage.addEventListener('mouseleave', () => {
 
 // ── keypress routing ───────────────────────────────────────────
 const COMMANDS = {
-  japan: '/jp', github: '/git', anime: '/anime', movies: '/movies', music: '/music',
+  japan: '/jp', github: '/git', anime: '/anime', movies: '/movies', music: '/music', socials: '/',
 };
 const items    = Array.from(document.querySelectorAll('#cmd-list li'));
 const ghost    = document.getElementById('typed-ghost');
