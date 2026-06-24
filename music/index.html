@@ -367,9 +367,89 @@
     height: 48px;
     border-radius: 10px;
   }
+
+  /* ── cherry blossom tree ── */
+  .blossom-tree {
+    position: fixed;
+    left: -4px;
+    bottom: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.15;
+    letter-spacing: 0;
+    white-space: pre;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    opacity: 0.90;
+  }
+  .blossom-tree .trunk       { color: #6b4c36; }
+  .blossom-tree .branch      { color: #8a6848; }
+  .blossom-tree .branch-thin { color: #7a5a3e; }
+  .blossom-tree .blossom     { color: #ffb7c5; text-shadow: 0 0 6px rgba(255,150,180,0.5); }
+  .blossom-tree .blossom-deep{ color: #ff85a8; text-shadow: 0 0 8px rgba(255,100,160,0.6); }
+  .blossom-tree .blossom-pale{ color: #ffd6e3; text-shadow: 0 0 4px rgba(255,180,210,0.4); }
+  .blossom-tree .root        { color: #5a4030; }
+
+  .petal {
+    position: fixed;
+    font-family: 'Courier New', monospace;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    font-size: 13px;
+    line-height: 1;
+    will-change: transform, opacity;
+    animation: drift linear forwards;
+  }
+  @keyframes drift {
+    0%   { transform: translate(0, 0) rotate(var(--rot-start)); opacity: 0; }
+    6%   { opacity: var(--petal-opacity); }
+    90%  { opacity: calc(var(--petal-opacity) * 0.5); }
+    100% { transform: translate(var(--drift-x), var(--drift-y)) rotate(var(--rot-end)); opacity: 0; }
+  }
+
+  #bg-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #petal-floor {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    overflow: visible;
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+    font-family: 'Courier New', monospace;
+    line-height: 1.1;
+  }
+  .floor-col {
+    position: absolute;
+    bottom: 0;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+  }
+  .floor-petal {
+    display: block;
+    line-height: 1;
+    transition: opacity 2s ease-out;
+  }
+  @media (max-width: 860px) { .blossom-tree { font-size: 10px; } }
 </style>
 </head>
 <body>
+<div id="bg-layer" aria-hidden="true">
+  <div class="blossom-tree" id="blossom-tree"></div>
+  <div id="petal-floor"></div>
+</div>
+
 <a class="back-link" href="/home">
     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     back
@@ -558,6 +638,237 @@
       if (navBuffer.endsWith(word)) { window.location.href = url; return; }
     }
   });
+
+  // ── cherry blossom tree ───────────────────────────────────────
+  const treeEl = document.getElementById('blossom-tree');
+  const GRID_W = 58, GRID_H = 42;
+  let grid, blossomCells;
+
+  function makeGrid() {
+    const g = [];
+    for (let y = 0; y < GRID_H; y++) g.push(new Array(GRID_W).fill(' '));
+    return g;
+  }
+
+  function setCell(x, y, ch, cls) {
+    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
+    const existing = grid[y][x];
+    if (typeof existing === 'string' && existing.includes('blossom')) return;
+    grid[y][x] = cls ? `<span class="${cls}">${ch}</span>` : ch;
+    if (cls && cls.startsWith('blossom')) blossomCells.push({ x, y });
+  }
+
+  let rngSeed = 137;
+  function rand() {
+    rngSeed = (rngSeed * 1664525 + 1013904223) & 0xffffffff;
+    return (rngSeed >>> 0) / 0xffffffff;
+  }
+
+  function drawBranch(x, y, dx, dy, len, cls) {
+    for (let i = 0; i < len; i++) {
+      const nx = Math.round(x + dx * i), ny = Math.round(y + dy * i);
+      let ch;
+      if (Math.abs(dx) < 0.1)      ch = '|';
+      else if (Math.abs(dy) < 0.1) ch = '_';
+      else if (dx > 0 && dy < 0)   ch = '/';
+      else if (dx < 0 && dy < 0)   ch = '\\';
+      else if (dx > 0 && dy > 0)   ch = '\\';
+      else                          ch = '/';
+      setCell(nx, ny, ch, cls);
+    }
+  }
+
+  function placeBlossom(cx, cy, r) {
+    const offsets = [];
+    for (let ly = -r; ly <= r; ly++)
+      for (let lx = -r * 2; lx <= r * 2; lx++) {
+        const dist = Math.sqrt((lx / (r * 2.1)) ** 2 + (ly / (r * 0.85)) ** 2);
+        if (dist <= 1) offsets.push([lx, ly]);
+      }
+    for (const [lx, ly] of offsets) {
+      if (rand() < 0.72) {
+        let cls, ch;
+        const v = rand();
+        if (v < 0.15)      { cls = 'blossom-deep'; ch = rand() < 0.5 ? '*' : 'o'; }
+        else if (v < 0.55) { cls = 'blossom';      ch = rand() < 0.4 ? '*' : rand() < 0.5 ? '.' : 'o'; }
+        else               { cls = 'blossom-pale';  ch = rand() < 0.6 ? '.' : '*'; }
+        setCell(cx + lx, cy + ly, ch, cls);
+      }
+    }
+  }
+
+  function initTree() {
+    rngSeed = 137; grid = makeGrid(); blossomCells = [];
+    const trunkBaseX = 18, trunkBaseY = GRID_H - 1, trunkHeight = 22;
+    for (let i = 0; i < trunkHeight; i++) {
+      const t = i / trunkHeight, wobble = Math.round(t * t * 2);
+      const x = trunkBaseX + wobble, y = trunkBaseY - i;
+      setCell(x, y, wobble > 0 && i === trunkHeight - 1 ? '/' : '|', 'trunk');
+      if (i < 8) setCell(x + 1, y, '|', 'trunk');
+      if (i < 4) setCell(x - 1, y, '|', 'root');
+    }
+    const rx = trunkBaseX, ry = trunkBaseY;
+    for (let i = 1; i <= 5; i++) { setCell(rx - i, ry, '\\', 'root'); setCell(rx + 1 + i, ry, '/', 'root'); }
+    setCell(rx - 6, ry, '_', 'root'); setCell(rx + 7, ry, '_', 'root');
+    for (let i = 1; i <= 3; i++) { setCell(rx - i, ry - 1, '\\', 'root'); setCell(rx + 1 + i, ry - 1, '/', 'root'); }
+    const tipX = trunkBaseX + 2, tipY = trunkBaseY - trunkHeight;
+    const scaffolds = [
+      { sx: -1, sy: 6,  angle: 145, len: 13 }, { sx: -1, sy: 10, angle: 155, len: 10 },
+      { sx: 2,  sy: 5,  angle: 35,  len: 14 }, { sx: 2,  sy: 9,  angle: 25,  len: 11 },
+      { sx: 1,  sy: 0,  angle: 100, len: 9  }, { sx: 1,  sy: 0,  angle: 80,  len: 9  },
+      { sx: 0,  sy: 2,  angle: 120, len: 8  }, { sx: 2,  sy: 2,  angle: 60,  len: 8  },
+      { sx: 0,  sy: 7,  angle: 130, len: 7  }, { sx: 2,  sy: 7,  angle: 50,  len: 7  },
+    ];
+    const branchTips = [];
+    for (const sc of scaffolds) {
+      const startX = tipX + sc.sx, startY = tipY + sc.sy;
+      const rad = (sc.angle * Math.PI) / 180, dx = Math.cos(rad), dy = -Math.sin(rad);
+      drawBranch(startX, startY, dx, dy, sc.len, sc.len >= 11 ? 'branch' : 'branch-thin');
+      branchTips.push({ x: Math.round(startX + dx * sc.len), y: Math.round(startY + dy * sc.len), r: Math.floor(sc.len / 3.2) + 2 });
+      for (let s = 0; s < 2; s++) {
+        if (rand() < 0.65) {
+          const split = 0.4 + rand() * 0.4;
+          const bx = Math.round(startX + dx * sc.len * split), by = Math.round(startY + dy * sc.len * split);
+          const spread = (rand() < 0.5 ? 1 : -1) * (25 + rand() * 30);
+          const brad = ((sc.angle + spread) * Math.PI) / 180;
+          const subLen = Math.floor(sc.len * (0.4 + rand() * 0.3));
+          drawBranch(bx, by, Math.cos(brad), -Math.sin(brad), subLen, 'branch-thin');
+          branchTips.push({ x: Math.round(bx + Math.cos(brad) * subLen), y: Math.round(by - Math.sin(brad) * subLen), r: 2 });
+        }
+      }
+    }
+    for (const tip of branchTips) placeBlossom(tip.x, tip.y, tip.r);
+    for (let pass = 0; pass < 6; pass++) {
+      placeBlossom(tipX + Math.round((rand() - 0.45) * 22), tipY - Math.round(rand() * 8), 3 + Math.floor(rand() * 3));
+    }
+  }
+
+  initTree();
+  treeEl.innerHTML = grid.map(r => r.join('')).join('\n');
+
+  // ── drifting petals ───────────────────────────────────────────
+  const PETAL_CHARS  = ['*', '.', 'o', "'", ','];
+  const PETAL_COUNT  = 55;
+  const PETAL_COLORS = ['hsl(345,100%,88%)','hsl(350,100%,82%)','hsl(340,100%,78%)','hsl(355,100%,92%)','hsl(320,80%,85%)'];
+
+  function getBlossomOrigin() {
+    if (!blossomCells.length) return null;
+    const cell = blossomCells[Math.floor(Math.random() * blossomCells.length)];
+    const rect = treeEl.getBoundingClientRect();
+    return { x: rect.left + cell.x * 7.8 + (Math.random() - 0.5) * 20, y: rect.top + cell.y * 14.95 + (Math.random() - 0.5) * 14 };
+  }
+
+  const floorEl = document.getElementById('petal-floor');
+  const COL_W = 18, MAX_PILE = 6;
+  const floorCols = {};
+
+  function getFloorCol(x) {
+    const idx = Math.floor(x / COL_W);
+    if (!floorCols[idx]) floorCols[idx] = { rows: [], baseX: idx * COL_W };
+    return floorCols[idx];
+  }
+
+  function makeRowSpans(color) {
+    const count = 1 + Math.floor(Math.random() * 4), spans = [];
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('span');
+      s.className = 'floor-petal';
+      s.textContent = PETAL_CHARS[Math.floor(Math.random() * PETAL_CHARS.length)];
+      s.style.cssText = `font-size:${8 + Math.random() * 8}px;color:hsl(${330 + Math.random() * 30},90%,${75 + Math.random() * 18}%);opacity:0.85;`;
+      spans.push(s);
+    }
+    return spans;
+  }
+
+  function landPetal(x, color) {
+    const col = getFloorCol(x);
+    if (col.rows.length >= MAX_PILE) return;
+    const rowEl = document.createElement('div');
+    rowEl.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;line-height:1;';
+    makeRowSpans(color).forEach(s => rowEl.appendChild(s));
+    let colEl = floorEl.querySelector(`[data-col="${Math.floor(x / COL_W)}"]`);
+    if (!colEl) {
+      colEl = document.createElement('div');
+      colEl.className = 'floor-col'; colEl.dataset.col = Math.floor(x / COL_W);
+      colEl.style.left  = (col.baseX + (Math.random() - 0.5) * COL_W * 0.6) + 'px';
+      colEl.style.width = (COL_W + Math.floor(Math.random() * 8)) + 'px';
+      floorEl.appendChild(colEl);
+    }
+    colEl.appendChild(rowEl);
+    col.rows.push({ el: rowEl, age: 0 });
+  }
+
+  setInterval(() => {
+    for (const idx of Object.keys(floorCols)) {
+      const col = floorCols[idx];
+      if (!col.rows.length) continue;
+      col.rows.forEach(r => r.age++);
+      const bottom = col.rows[0];
+      if (bottom && bottom.age > 24) {
+        bottom.el.style.transition = 'opacity 3s ease-out'; bottom.el.style.opacity = '0';
+        setTimeout(() => bottom.el.remove(), 3000);
+        col.rows.shift();
+      }
+    }
+  }, 8000);
+
+  function spawnPetal(initialDelay) {
+    const el = document.createElement('span');
+    el.className = 'petal';
+    el.textContent = PETAL_CHARS[Math.floor(Math.random() * PETAL_CHARS.length)];
+    function launch(origin) {
+      if (origin) { el.style.left = origin.x + 'px'; el.style.top = origin.y + 'px'; }
+      else { el.style.left = (Math.random() * window.innerWidth * 0.18) + 'px'; el.style.top = (Math.random() * window.innerHeight * 0.75) + 'px'; }
+      const startX = parseFloat(el.style.left);
+      const driftX = window.innerWidth * (0.55 + Math.random() * 0.55);
+      const driftY = window.innerHeight * (0.05 + Math.random() * 0.6);
+      const rotStart = (Math.random() - 0.5) * 40, rotEnd = rotStart + (Math.random() - 0.5) * 200;
+      const duration = 7000 + Math.random() * 12000;
+      const opacity = 0.55 + Math.random() * 0.45;
+      const color = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
+      el.style.setProperty('--drift-x', driftX + 'px'); el.style.setProperty('--drift-y', driftY + 'px');
+      el.style.setProperty('--rot-start', rotStart + 'deg'); el.style.setProperty('--rot-end', rotEnd + 'deg');
+      el.style.setProperty('--petal-opacity', opacity);
+      el.style.animationDuration = duration + 'ms'; el.style.animationDelay = (initialDelay ?? 0) + 'ms';
+      el.style.fontSize = (10 + Math.random() * 5) + 'px'; el.style.color = color;
+      el.style.animationName = 'none'; void el.offsetWidth; el.style.animationName = 'drift';
+      el.addEventListener('animationend', () => {
+        if (driftY > window.innerHeight * 0.3 && Math.random() < 0.35) { const lx = startX + driftX; if (lx >= 0 && lx <= window.innerWidth) landPetal(lx, color); }
+        el.style.animationDelay = '0ms';
+        setTimeout(() => launch(getBlossomOrigin()), 200 + Math.random() * 1800);
+      }, { once: true });
+    }
+    document.getElementById('bg-layer').appendChild(el);
+    launch(getBlossomOrigin());
+  }
+
+  for (let i = 0; i < PETAL_COUNT; i++) spawnPetal(i < 12 ? -(Math.random() * 9000) : Math.random() * 6000);
+
+  setTimeout(() => {
+    const rect = treeEl.getBoundingClientRect();
+    const cx = rect.left + rect.width * 0.35, spread = rect.width * 1.1;
+    for (let i = 0; i < 38; i++) {
+      const u1 = Math.random(), u2 = Math.random();
+      const gauss = Math.sqrt(-2 * Math.log(u1 + 0.0001)) * Math.cos(2 * Math.PI * u2);
+      const x = cx + gauss * (spread * 0.3) + Math.random() * spread * 0.25;
+      if (x < 0 || x > window.innerWidth) continue;
+      const col = getFloorCol(x);
+      if (col.rows.length >= 3) continue;
+      const color = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
+      const rowEl = document.createElement('div');
+      rowEl.style.cssText = 'display:flex;align-items:flex-end;justify-content:center;line-height:1;';
+      makeRowSpans(color).forEach(s => rowEl.appendChild(s));
+      let colEl = floorEl.querySelector(`[data-col="${Math.floor(x / COL_W)}"]`);
+      if (!colEl) {
+        colEl = document.createElement('div'); colEl.className = 'floor-col'; colEl.dataset.col = Math.floor(x / COL_W);
+        colEl.style.left = (col.baseX + (Math.random() - 0.5) * COL_W * 0.6) + 'px';
+        colEl.style.width = (COL_W + Math.floor(Math.random() * 8)) + 'px';
+        floorEl.appendChild(colEl);
+      }
+      colEl.appendChild(rowEl);
+      col.rows.push({ el: rowEl, age: Math.floor(Math.random() * 8) });
+    }
+  }, 100);
 </script>
 </body>
 </html>
