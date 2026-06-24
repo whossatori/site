@@ -119,7 +119,8 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     padding-bottom: 4px;
-    justify-content: center;
+    padding-left: calc((100% - (88px * 6 + 10px * 5)) / 2);
+    padding-right: calc((100% - (88px * 6 + 10px * 5)) / 2);
   }
   .slider::-webkit-scrollbar { display: none; }
 
@@ -130,9 +131,17 @@
     height: 88px;
     scroll-snap-align: start;
     border-radius: 12px;
-    overflow: visible;
+    overflow: hidden;
     cursor: default;
     z-index: 1;
+    transition: flex-basis 0.25s ease, width 0.25s ease;
+    display: flex;
+    align-items: stretch;
+  }
+  .scrobble-card:hover {
+    flex-basis: 248px;
+    width: 248px;
+    overflow: visible;
   }
   .scrobble-card:hover { z-index: 10; }
 
@@ -148,6 +157,11 @@
     object-fit: cover;
     display: block;
     background: #1a1a1e;
+    flex-shrink: 0;
+    transition: border-radius 0.25s ease;
+  }
+  .scrobble-card:hover .scrobble-art {
+    border-radius: 12px 0 0 12px;
   }
   .scrobble-art-placeholder {
     width: 88px;
@@ -159,32 +173,36 @@
     justify-content: center;
     color: var(--text-dimmer);
     font-size: 24px;
+    flex-shrink: 0;
+    transition: border-radius 0.25s ease;
+  }
+  .scrobble-card:hover .scrobble-art-placeholder {
+    border-radius: 12px 0 0 12px;
   }
 
   .scrobble-info {
-    position: absolute;
-    top: 0;
-    left: 88px;
+    width: 0;
     height: 88px;
-    width: 160px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 0 14px;
-    background: rgba(14,14,18,0.82);
+    padding: 0;
+    background: rgba(14,14,18,0.92);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--line-strong);
     border-left: none;
     border-radius: 0 12px 12px 0;
+    overflow: hidden;
     opacity: 0;
-    transform: translateX(-8px);
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none;
+    transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .scrobble-card:hover .scrobble-info {
+    width: 160px;
     opacity: 1;
-    transform: translateX(0);
+    padding: 0 14px;
   }
 
   .scrobble-name {
@@ -414,11 +432,12 @@
     return `${Math.floor(h / 24)}d ago`;
   }
 
-  function artImg(src, cls, alt) {
-    if (src && !src.includes('2a96cbd8b46e442fc41c2b86b821562f')) {
+  function artImg(src, cls, alt, initial) {
+    if (src && !src.includes('2a96cbd8b46e442fc41c2b86b821562f') && src.trim() !== '') {
       return `<img class="${cls}" src="${src}" alt="${alt}" loading="lazy">`;
     }
-    return `<div class="${cls}-placeholder">♪</div>`;
+    const letter = initial ? initial.charAt(0).toUpperCase() : '♪';
+    return `<div class="${cls}-placeholder" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text-dim)">${letter}</div>`;
   }
 
   // ── recent scrobbles ──────────────────────────────────────────
@@ -439,7 +458,7 @@
 
     slider.innerHTML = tracks.map(t => `
       <div class="scrobble-card${t.nowPlaying ? ' now' : ''}">
-        ${artImg(t.image, 'scrobble-art', t.name)}
+        ${artImg(t.image, 'scrobble-art', t.name, t.name)}
         <div class="scrobble-info">
           <div class="scrobble-name">${t.name}</div>
           <div class="scrobble-artist">${t.artist}</div>
@@ -456,7 +475,7 @@
     document.getElementById('top-artists').innerHTML = artists.map((a, i) => `
       <a class="top-item" href="${a.url}" target="_blank" rel="noopener">
         <span class="top-rank">${i + 1}</span>
-        ${artImg(a.image, 'top-art', a.name)}
+        ${artImg(a.image, 'top-art', a.name, a.name)}
         <div class="top-info">
           <div class="top-name">${a.name}</div>
         </div>
@@ -472,7 +491,7 @@
     document.getElementById('top-tracks').innerHTML = tracks.map((t, i) => `
       <a class="top-item" href="${t.url}" target="_blank" rel="noopener">
         <span class="top-rank">${i + 1}</span>
-        ${artImg(t.image, 'top-art', t.name)}
+        ${artImg(t.image, 'top-art', t.name, t.name)}
         <div class="top-info">
           <div class="top-name">${t.name}</div>
           <div class="top-sub">${t.artist}</div>
