@@ -469,19 +469,49 @@
   }
 
   // ── top artists ───────────────────────────────────────────────
+  // Last.fm deprecated artist images — fetch from MusicBrainz instead
+  async function getArtistImage(name) {
+    try {
+      const search = await fetch(`https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(name)}&limit=1&fmt=json`);
+      const data   = await search.json();
+      const mbid   = data.artists?.[0]?.id;
+      if (!mbid) return null;
+      // Try to get an image from the CAA (Cover Art Archive) via fanart.tv isn't available
+      // so use the MusicBrainz relation thumbnail if available
+      const artist = await fetch(`https://musicbrainz.org/ws/2/artist/${mbid}?inc=url-rels&fmt=json`);
+      const aData  = await artist.json();
+      // Look for a Wikimedia/Wikipedia image relation
+      const imgRel = aData['url-relations']?.find(r =>
+        r.type === 'image' || r.url?.resource?.includes('commons.wikimedia')
+      );
+      return imgRel?.url?.resource ?? null;
+    } catch { return null; }
+  }
+
   async function loadTopArtists() {
     const res     = await fetch(`${API}/music/top-artists`);
     const artists = await res.json();
+
+    // Render immediately with initials, then fill images async
     document.getElementById('top-artists').innerHTML = artists.map((a, i) => `
-      <a class="top-item" href="${a.url}" target="_blank" rel="noopener">
+      <a class="top-item" href="${a.url}" target="_blank" rel="noopener" id="artist-row-${i}">
         <span class="top-rank">${i + 1}</span>
-        ${artImg(a.image, 'top-art', a.name, a.name)}
+        <div class="top-art-placeholder" id="artist-img-${i}" style="font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:var(--text-dim)">${a.name.charAt(0).toUpperCase()}</div>
         <div class="top-info">
           <div class="top-name">${a.name}</div>
         </div>
         <div class="top-plays">${a.plays.toLocaleString()}<span>plays</span></div>
       </a>
     `).join('');
+
+    // Fetch images in background and swap in
+    artists.forEach(async (a, i) => {
+      const img = await getArtistImage(a.name);
+      if (img) {
+        const el = document.getElementById(`artist-img-${i}`);
+        if (el) el.outerHTML = `<img class="top-art" src="${img}" alt="${a.name}" loading="lazy">`;
+      }
+    });
   }
 
   // ── top tracks ────────────────────────────────────────────────
@@ -506,6 +536,15 @@
   loadTopArtists();
   loadTopTracks();
   setInterval(loadRecent, 30000);
+
+  // ── scroll wheel → horizontal scroll on slider ────────────────
+  const sliderEl = document.getElementById('slider');
+  sliderEl.addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      sliderEl.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
 
   // ── keyboard nav ──────────────────────────────────────────────
   const NAV = { home:'/home', japan:'/jp', music:'/music', anime:'/anime', github:'/git', movies:'/movies', socials:'/' };
