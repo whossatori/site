@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>satori / admin</title>
+<link rel="icon" id="favicon" href="https://segs.lol/IEPPV1.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:          #0a0a0c;
+    --card:        #111114;
+    --line:        rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.22);
+    --glow:        rgba(255,255,255,0.06);
+    --text:        #f2f2f0;
+    --text-dim:    #8a8a8f;
+    --text-dimmer: #55555c;
+    --accent:      rgba(255,255,255,0.9);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
+    pointer-events: none;
+  }
+
+  .page {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  .back-link {
+    position: fixed;
+    top: 24px; left: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    color: var(--text-dimmer);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+    z-index: 10;
+  }
+  .back-link:hover { color: var(--text-dim); }
+  .back-link svg { width: 12px; height: 12px; }
+
+  .page-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .page-sub {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 48px;
+  }
+
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── upload zone ── */
+  .upload-zone {
+    border: 1px dashed var(--line-strong);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.03); }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+  .upload-preview {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 10px;
+    display: block;
+    background: #1a1a1e;
+    border: 1px solid var(--line);
+  }
+  .upload-preview.square { border-radius: 8px; }
+
+  .upload-hint {
+    font-size: 12px;
+    color: var(--text-dimmer);
+  }
+  .upload-hint strong { color: var(--text-dim); }
+
+  .upload-status {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    min-height: 18px;
+  }
+  .upload-status.ok  { color: #7fba7f; }
+  .upload-status.err { color: #d98a8a; }
+
+  /* ── field rows ── */
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .field label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dimmer);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .field-row {
+    display: flex;
+    gap: 8px;
+  }
+  .field input {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--line-strong); }
+
+  .btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 9px 16px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: rgba(255,255,255,0.14); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .save-status {
+    font-size: 11px;
+    color: var(--text-dimmer);
+    margin-top: 2px;
+    min-height: 16px;
+  }
+  .save-status.ok  { color: #7fba7f; }
+  .save-status.err { color: #d98a8a; }
+
+  .logout-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 7px 14px;
+    color: var(--text-dimmer);
+    font-size: 12px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    margin-top: 32px;
+  }
+  .logout-btn:hover { color: var(--text); border-color: var(--line-strong); }
+</style>
+</head>
+<body>
+
+<a class="back-link" href="/home">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+  back
+</a>
+
+<div class="page">
+  <div class="page-title">admin</div>
+  <div class="page-sub">manage your site settings</div>
+
+  <!-- ── images ── -->
+  <div class="section">
+    <div class="section-label">images</div>
+    <div class="card">
+
+      <div class="field">
+        <label>Avatar</label>
+        <div class="upload-zone" id="avatar-zone">
+          <input type="file" accept="image/*" id="avatar-input">
+          <img class="upload-preview" id="avatar-preview" src="" alt="avatar">
+          <div class="upload-hint">drag & drop or <strong>click to browse</strong></div>
+        </div>
+        <div class="upload-status" id="avatar-status"></div>
+      </div>
+
+      <div class="field">
+        <label>Favicon (tab icon)</label>
+        <div class="upload-zone" id="favicon-zone">
+          <input type="file" accept="image/*" id="favicon-input">
+          <img class="upload-preview square" id="favicon-preview" src="" alt="favicon">
+          <div class="upload-hint">drag & drop or <strong>click to browse</strong></div>
+        </div>
+        <div class="upload-status" id="favicon-status"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── social links ── -->
+  <div class="section">
+    <div class="section-label">social links</div>
+    <div class="card" id="links-card">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- ── nav descriptions ── -->
+  <div class="section">
+    <div class="section-label">nav descriptions</div>
+    <div class="card" id="nav-card">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <button class="logout-btn" onclick="logout()">log out</button>
+</div>
+
+<script>
+  const API = 'https://api.satos.cc';
+
+  // ── auth guard ────────────────────────────────────────────────
+  const token = localStorage.getItem('admin_token');
+  if (!token) { window.location.href = '/home'; }
+
+  function authHeaders() {
+    return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+  }
+
+  function logout() {
+    localStorage.removeItem('admin_token');
+    window.location.href = '/home';
+  }
+
+  // ── load current config ───────────────────────────────────────
+  async function loadConfig() {
+    const res  = await fetch(`${API}/config`);
+    const cfg  = await res.json();
+
+    // Set image previews
+    document.getElementById('avatar-preview').src  = cfg.avatar_url;
+    document.getElementById('favicon-preview').src = cfg.favicon_url;
+
+    // Build social links fields
+    const links = [
+      { key: 'link_twitch',  label: 'Twitch' },
+      { key: 'link_twitter', label: 'Twitter / X' },
+      { key: 'link_tiktok',  label: 'TikTok' },
+      { key: 'link_throne',  label: 'Throne' },
+      { key: 'link_tips',    label: 'Tips' },
+      { key: 'link_discord', label: 'Discord invite' },
+    ];
+    document.getElementById('links-card').innerHTML = links.map(l => fieldHTML(l.key, l.label, cfg[l.key])).join('');
+
+    // Build nav description fields
+    const navs = [
+      { key: 'nav_japan',   label: 'japan' },
+      { key: 'nav_github',  label: 'github' },
+      { key: 'nav_anime',   label: 'anime' },
+      { key: 'nav_movies',  label: 'movies' },
+      { key: 'nav_music',   label: 'music' },
+      { key: 'nav_socials', label: 'socials' },
+    ];
+    document.getElementById('nav-card').innerHTML = navs.map(n => fieldHTML(n.key, n.key, cfg[n.key])).join('');
+
+    // Attach save listeners
+    document.querySelectorAll('.save-btn').forEach(btn => {
+      btn.addEventListener('click', () => saveField(btn.dataset.key));
+    });
+  }
+
+  function fieldHTML(key, label, value) {
+    return `
+      <div class="field">
+        <label>${label}</label>
+        <div class="field-row">
+          <input type="text" id="field-${key}" value="${value ?? ''}" placeholder="${label}">
+          <button class="btn save-btn" data-key="${key}">save</button>
+        </div>
+        <div class="save-status" id="status-${key}"></div>
+      </div>`;
+  }
+
+  async function saveField(key) {
+    const input  = document.getElementById(`field-${key}`);
+    const status = document.getElementById(`status-${key}`);
+    const value  = input.value.trim();
+    if (!value) return;
+
+    try {
+      const res = await fetch(`${API}/admin/config`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ key, value }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      status.textContent = 'saved ✓';
+      status.className = 'save-status ok';
+      setTimeout(() => { status.textContent = ''; status.className = 'save-status'; }, 2000);
+    } catch {
+      status.textContent = 'error saving';
+      status.className = 'save-status err';
+    }
+  }
+
+  // ── image upload ──────────────────────────────────────────────
+  function setupUpload(type) {
+    const zone    = document.getElementById(`${type}-zone`);
+    const input   = document.getElementById(`${type}-input`);
+    const preview = document.getElementById(`${type}-preview`);
+    const status  = document.getElementById(`${type}-status`);
+
+    async function upload(file) {
+      if (!file) return;
+      status.textContent = 'uploading...';
+      status.className = 'upload-status';
+
+      const form = new FormData();
+      form.append('file', file);
+
+      try {
+        const res  = await fetch(`${API}/admin/upload/${type}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: form,
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        preview.src = data.url + '?t=' + Date.now();
+        status.textContent = 'uploaded ✓';
+        status.className = 'upload-status ok';
+        setTimeout(() => { status.textContent = ''; status.className = 'upload-status'; }, 2000);
+      } catch (e) {
+        status.textContent = 'upload failed: ' + e.message;
+        status.className = 'upload-status err';
+      }
+    }
+
+    input.addEventListener('change', () => upload(input.files[0]));
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag');
+      upload(e.dataTransfer.files[0]);
+    });
+  }
+
+  loadConfig();
+  setupUpload('avatar');
+  setupUpload('favicon');
+</script>
+</body>
+</html>

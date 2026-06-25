@@ -292,6 +292,72 @@
     max-width: min(480px, 90vw);
     max-height: 80vh;
   }
+
+  /* ── login modal ── */
+  #login-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    animation: egg-fadein 0.25s ease-out;
+  }
+  #login-overlay.active { display: flex; }
+  #login-box {
+    background: linear-gradient(160deg, #111114, #0d0d10);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 18px;
+    padding: 32px 28px;
+    width: 320px;
+    box-shadow: 0 0 60px -10px rgba(255,255,255,0.06), 0 30px 80px -20px rgba(0,0,0,0.9);
+    animation: egg-popin 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  #login-box h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  #login-box input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #login-box input:focus { border-color: var(--line-strong); }
+  #login-btn {
+    width: 100%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 10px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #login-btn:hover { background: rgba(255,255,255,0.14); }
+  #login-error {
+    font-size: 12px;
+    color: #d98a8a;
+    text-align: center;
+    min-height: 16px;
+  }
 </style>
 </head>
 <body>
@@ -299,7 +365,6 @@
   <div class="blossom-tree" id="blossom-tree"></div>
   <div id="petal-floor"></div>
 </div>
-
 
 <div class="stage" id="stage">
   <div class="card" id="card">
@@ -361,6 +426,17 @@
   </div>
 </div>
 
+<!-- login modal -->
+<div id="login-overlay" role="dialog" aria-modal="true" aria-label="Admin login">
+  <div id="login-box">
+    <h2>admin login</h2>
+    <input type="text" id="login-user" placeholder="username" autocomplete="off">
+    <input type="password" id="login-pass" placeholder="password" autocomplete="off">
+    <button id="login-btn">sign in</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
 <script>
 // ── card tilt ──────────────────────────────────────────────────
 const card  = document.getElementById('card');
@@ -417,6 +493,13 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  // login
+  if (keyBuffer === 'login') {
+    openLogin();
+    resetBuffer();
+    return;
+  }
+
   const matches = items.filter(li => li.dataset.cmd.startsWith(keyBuffer));
   items.forEach(li => li.classList.toggle('active', matches.includes(li)));
   if (matches.length === 0) {
@@ -433,6 +516,57 @@ items.forEach(li => li.addEventListener('click', () => navigate(li.dataset.url))
 const eggOverlay = document.getElementById('egg-overlay');
 eggOverlay.addEventListener('click', (e) => { if (e.target === eggOverlay) eggOverlay.classList.remove('active'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && eggOverlay.classList.contains('active')) eggOverlay.classList.remove('active'); }, true);
+
+// ── login modal ────────────────────────────────────────────────
+const loginOverlay = document.getElementById('login-overlay');
+const loginUser    = document.getElementById('login-user');
+const loginPass    = document.getElementById('login-pass');
+const loginBtn     = document.getElementById('login-btn');
+const loginError   = document.getElementById('login-error');
+
+function openLogin() {
+  loginOverlay.classList.add('active');
+  loginUser.value = ''; loginPass.value = ''; loginError.textContent = '';
+  setTimeout(() => loginUser.focus(), 50);
+}
+
+function closeLogin() {
+  loginOverlay.classList.remove('active');
+}
+
+loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) closeLogin(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && loginOverlay.classList.contains('active')) closeLogin();
+}, true);
+
+loginPass.addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+loginUser.addEventListener('keydown', (e) => { if (e.key === 'Enter') loginPass.focus(); });
+loginBtn.addEventListener('click', doLogin);
+
+async function doLogin() {
+  const username = loginUser.value.trim();
+  const password = loginPass.value;
+  if (!username || !password) return;
+
+  loginBtn.disabled = true;
+  loginError.textContent = '';
+
+  try {
+    const res  = await fetch('https://api.satos.cc/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Invalid credentials');
+    localStorage.setItem('admin_token', data.token);
+    closeLogin();
+    window.location.href = '/admin';
+  } catch (e) {
+    loginError.textContent = e.message;
+    loginBtn.disabled = false;
+  }
+}
 
 // ── cherry blossom tree (cbonsai style, cherry blossom shaped) ──
 const treeEl = document.getElementById('blossom-tree');
@@ -855,6 +989,7 @@ function seedFloorPetals() {
 
 // Run after a short delay so treeEl.getBoundingClientRect() is reliable
 setTimeout(seedFloorPetals, 100);
+
 </script>
 
 </body>
