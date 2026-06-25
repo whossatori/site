@@ -211,7 +211,7 @@
   .logout-btn:hover { color: var(--text); border-color: var(--line-strong); }
 </style>
 </head>
-<body>
+<body style="visibility:hidden">
 
 <a class="back-link" href="/home">
   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
@@ -274,7 +274,24 @@
 
   // ── auth guard ────────────────────────────────────────────────
   const token = localStorage.getItem('admin_token');
-  if (!token) { window.location.href = '/home'; }
+  if (!token) {
+    window.location.href = '/home';
+  } else {
+    // Verify token is still valid before showing the page
+    fetch('https://api.satos.cc/admin/config', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(res => {
+      if (res.status === 401) {
+        localStorage.removeItem('admin_token');
+        window.location.href = '/home';
+      } else {
+        document.body.style.visibility = 'visible';
+      }
+    }).catch(() => {
+      // If API is down, show page anyway (token exists)
+      document.body.style.visibility = 'visible';
+    });
+  }
 
   function authHeaders() {
     return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };

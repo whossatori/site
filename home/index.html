@@ -380,37 +380,37 @@
           <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">japan</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">language</span>
+          <span class="cmd-desc" id="desc-japan">language</span>
         </li>
         <li data-cmd="github" data-url="/git">
           <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">github</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">projects</span>
+          <span class="cmd-desc" id="desc-github">projects</span>
         </li>
         <li data-cmd="anime"  data-url="/anime">
           <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">anime</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">anilist</span>
+          <span class="cmd-desc" id="desc-anime">anilist</span>
         </li>
         <li data-cmd="movies" data-url="/movies">
           <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">movies</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">ratings</span>
+          <span class="cmd-desc" id="desc-movies">ratings</span>
         </li>
         <li data-cmd="music"  data-url="/music">
           <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">music</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">lastfm</span>
+          <span class="cmd-desc" id="desc-music">lastfm</span>
         </li>
         <li data-cmd="socials" data-url="/">
           <span class="cmd-petal">✿</span>
           <span class="cmd-keyword">socials</span>
           <span class="cmd-sep">—</span>
-          <span class="cmd-desc">media</span>
+          <span class="cmd-desc" id="desc-socials">media</span>
         </li>
       </ul>
 
@@ -438,6 +438,21 @@
 </div>
 
 <script>
+// ── load config from API ───────────────────────────────────────
+(async () => {
+  try {
+    const res = await fetch('https://api.satos.cc/config');
+    const cfg = await res.json();
+    if (cfg.nav_japan)   document.getElementById('desc-japan').textContent   = cfg.nav_japan;
+    if (cfg.nav_github)  document.getElementById('desc-github').textContent  = cfg.nav_github;
+    if (cfg.nav_anime)   document.getElementById('desc-anime').textContent   = cfg.nav_anime;
+    if (cfg.nav_movies)  document.getElementById('desc-movies').textContent  = cfg.nav_movies;
+    if (cfg.nav_music)   document.getElementById('desc-music').textContent   = cfg.nav_music;
+    if (cfg.nav_socials) document.getElementById('desc-socials').textContent = cfg.nav_socials;
+    if (cfg.favicon_url) document.querySelector('link[rel="icon"]').href = cfg.favicon_url;
+  } catch { /* keep defaults if API is down */ }
+})();
+
 // ── card tilt ──────────────────────────────────────────────────
 const card  = document.getElementById('card');
 const stage = document.getElementById('stage');
@@ -989,7 +1004,6 @@ function seedFloorPetals() {
 
 // Run after a short delay so treeEl.getBoundingClientRect() is reliable
 setTimeout(seedFloorPetals, 100);
-
 </script>
 
 </body>
