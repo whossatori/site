@@ -10,34 +10,69 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0c; --line: rgba(255,255,255,0.08);
-    --text: #f2f2f0; --text-dim: #8a8a8f; --text-dimmer: #55555c;
+    --bg:#0a0a0c;--card:#111114;--line:rgba(255,255,255,0.08);
+    --line-strong:rgba(255,255,255,0.22);--text:#f2f2f0;
+    --text-dim:#8a8a8f;--text-dimmer:#55555c;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; visibility: hidden; }
-  body::before {
-    content: ""; position: fixed; inset: 0;
-    background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
-    pointer-events: none;
-  }
-  .back-link {
-    position: fixed; top: 24px; left: 24px;
-    display: inline-flex; align-items: center; gap: 6px;
-    text-decoration: none; color: var(--text-dimmer);
-    font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
-    transition: color 0.2s; z-index: 10;
-  }
-  .back-link:hover { color: var(--text-dim); }
-  .back-link svg { width: 12px; height: 12px; }
-  .center {
-    position: fixed; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 0;
-    pointer-events: none; user-select: none;
-  }
-  .coming-soon {
-    font-family: 'Space Grotesk', sans-serif; font-size: 13px;
-    font-weight: 500; color: var(--text-dimmer); letter-spacing: 0.08em;
-  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;visibility:hidden;}
+  body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(255,255,255,0.025),transparent 40%),radial-gradient(circle at 80% 70%,rgba(255,255,255,0.02),transparent 40%);pointer-events:none;}
+  .page{max-width:700px;margin:0 auto;padding:48px 24px 80px;}
+  .back-link{position:fixed;top:24px;left:24px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-dimmer);font-size:12px;letter-spacing:0.04em;text-transform:uppercase;transition:color 0.2s;z-index:10;}
+  .back-link:hover{color:var(--text-dim);}
+  .back-link svg{width:12px;height:12px;}
+  .page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:8px;}
+  .page-sub{font-size:13px;color:var(--text-dim);margin-bottom:48px;}
+  .section{margin-bottom:36px;}
+  .section-label{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dimmer);margin-bottom:14px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;}
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .toggle-label{font-size:13px;color:var(--text-dim);}
+  .toggle{position:relative;width:44px;height:24px;background:rgba(255,255,255,0.08);border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:background 0.2s,border-color 0.2s;flex-shrink:0;}
+  .toggle.on{background:rgba(255,255,255,0.22);border-color:var(--line-strong);}
+  .toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--text-dimmer);transition:transform 0.2s,background 0.2s;}
+  .toggle.on::after{transform:translateX(20px);background:var(--text);}
+  .days-input{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-dim);}
+  .days-input input{width:64px;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;text-align:center;transition:border-color 0.2s;}
+  .days-input input:focus{border-color:var(--line-strong);}
+  .key-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,0.02);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap;}
+  .key-name{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;color:var(--text);flex:1;min-width:80px;}
+  .key-value{font-family:'Courier New',monospace;font-size:11px;color:var(--text-dimmer);flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:100px;}
+  .key-date{font-size:11px;color:var(--text-dimmer);flex-shrink:0;}
+  .btn-row{display:flex;gap:8px;flex-shrink:0;}
+  .btn{background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--text-dim);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;white-space:nowrap;}
+  .btn:hover{background:rgba(255,255,255,0.12);color:var(--text);}
+  .btn.danger{color:#d98a8a;}
+  .btn.danger:hover{background:rgba(217,138,138,0.1);border-color:rgba(217,138,138,0.3);}
+  .btn.primary{background:rgba(255,255,255,0.1);border-color:var(--line-strong);color:var(--text);}
+  .btn.primary:hover{background:rgba(255,255,255,0.18);}
+  .new-key-row{display:flex;gap:8px;}
+  .new-key-row input{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;}
+  .new-key-row input:focus{border-color:var(--line-strong);}
+  .config-grid{display:flex;flex-direction:column;gap:10px;}
+  .config-row{display:flex;align-items:center;gap:12px;}
+  .config-label{font-size:12px;color:var(--text-dimmer);width:110px;flex-shrink:0;}
+  .config-val{font-family:'Courier New',monospace;font-size:12px;color:var(--text-dim);background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:8px;padding:6px 10px;flex:1;cursor:pointer;transition:border-color 0.2s;word-break:break-all;}
+  .config-val:hover{border-color:var(--line-strong);}
+  .upload-zone{border:1px dashed var(--line-strong);border-radius:12px;padding:40px 28px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;position:relative;}
+  .upload-zone:hover,.upload-zone.drag{border-color:rgba(255,255,255,0.4);background:rgba(255,255,255,0.02);}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .upload-hint{font-size:13px;color:var(--text-dimmer);}
+  .upload-hint strong{color:var(--text-dim);}
+  .upload-hint small{display:block;margin-top:6px;font-size:11px;color:var(--text-dimmer);}
+  .upload-result{margin-top:14px;padding:14px;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:10px;display:none;}
+  .upload-result.visible{display:block;}
+  .upload-result-link{font-family:'Courier New',monospace;font-size:13px;color:var(--text);word-break:break-all;margin-bottom:10px;}
+  .status{font-size:12px;color:var(--text-dim);min-height:18px;}
+  .status.ok{color:#7fba7f;}
+  .status.err{color:#d98a8a;}
+  .empty{font-size:13px;color:var(--text-dimmer);text-align:center;padding:16px 0;}
+  #key-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+  #key-modal-overlay.active{display:flex;}
+  #key-modal{background:linear-gradient(160deg,#111114,#0d0d10);border:1px solid rgba(255,255,255,0.15);border-radius:18px;padding:32px 28px;width:440px;max-width:90vw;box-shadow:0 0 60px -10px rgba(255,255,255,0.06),0 30px 80px -20px rgba(0,0,0,0.9);display:flex;flex-direction:column;gap:14px;}
+  #key-modal h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;}
+  #key-modal p{font-size:12px;color:var(--text-dim);}
+  #key-modal-value{font-family:'Courier New',monospace;font-size:13px;color:var(--text);background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:10px;padding:12px;word-break:break-all;user-select:all;}
 </style>
 </head>
 <body>
@@ -47,26 +82,242 @@
   back
 </a>
 
-<div class="center">
-  <p class="coming-soon">uploader — coming soon...</p>
+<div class="page">
+  <div class="page-title">uploader</div>
+  <div class="page-sub">manage upload keys, settings, and upload files</div>
+
+  <div class="section">
+    <div class="section-label">auto-delete</div>
+    <div class="card">
+      <div class="toggle-row">
+        <span class="toggle-label">Automatically delete files after a set number of days. When turned on, all existing files will also be scheduled for deletion.</span>
+        <div class="toggle" id="autodelete-toggle"></div>
+      </div>
+      <div class="days-input">
+        <span>Delete after</span>
+        <input type="number" id="autodelete-days" value="30" min="1" max="365">
+        <span>days</span>
+        <button class="btn primary" id="autodelete-save">save</button>
+      </div>
+      <div class="status" id="autodelete-status"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">upload keys</div>
+    <div class="card">
+      <div class="new-key-row">
+        <input type="text" id="new-key-name" placeholder="key name (e.g. chatterino, john)">
+        <button class="btn primary" id="new-key-btn">generate key</button>
+      </div>
+      <div class="status" id="key-status"></div>
+      <div id="keys-list"><div class="empty">no keys yet</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">chatterino / sharex config</div>
+    <div class="card">
+      <div class="config-grid">
+        <div class="config-row">
+          <span class="config-label">Request URL</span>
+          <span class="config-val" onclick="copyText(this)">https://api.satos.cc/x/upload</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Form field</span>
+          <span class="config-val" onclick="copyText(this)">file</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Extra Headers</span>
+          <span class="config-val" id="chatterino-header" onclick="copyText(this)">Authorization: Bearer &lt;copy a key above&gt;</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Image link</span>
+          <span class="config-val" onclick="copyText(this)">{link}</span>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Deletion link</span>
+          <span class="config-val" onclick="copyText(this)">{delete}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">manual upload</div>
+    <div class="card">
+      <div class="upload-zone" id="upload-zone">
+        <input type="file" id="upload-input" accept=".png,.jpg,.jpeg,.gif,.webp,.avif,.jfif">
+        <div class="upload-hint">
+          drag & drop or <strong>click to browse</strong>
+          <small>png, jpg, jpeg, gif, webp, avif, jfif · max 50MB</small>
+        </div>
+      </div>
+      <div class="upload-result" id="upload-result">
+        <div class="upload-result-link" id="upload-result-link"></div>
+        <div class="btn-row">
+          <button class="btn primary" id="copy-link-btn">copy link</button>
+          <button class="btn" id="open-link-btn">open</button>
+        </div>
+      </div>
+      <div class="status" id="upload-status"></div>
+    </div>
+  </div>
+</div>
+
+<div id="key-modal-overlay">
+  <div id="key-modal">
+    <h2>new key generated</h2>
+    <p>Copy this key now — it won't be shown in full again.</p>
+    <div id="key-modal-value"></div>
+    <div class="btn-row">
+      <button class="btn primary" onclick="copyKeyModal()">copy key</button>
+      <button class="btn" onclick="closeKeyModal()">done</button>
+    </div>
+  </div>
 </div>
 
 <script>
+  const API   = 'https://api.satos.cc';
   const token = localStorage.getItem('admin_token');
+
   if (!token) {
     window.location.href = '/admin';
   } else {
-    fetch('https://api.satos.cc/admin/config', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(res => {
-      if (res.status === 401) {
-        localStorage.removeItem('admin_token');
-        window.location.href = '/admin';
-      } else {
-        document.body.style.visibility = 'visible';
-      }
-    }).catch(() => { document.body.style.visibility = 'visible'; });
+    fetch(`${API}/admin/config`, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => {
+        if (r.status === 401) { localStorage.removeItem('admin_token'); window.location.href = '/admin'; }
+        else document.body.style.visibility = 'visible';
+      })
+      .catch(() => { document.body.style.visibility = 'visible'; });
   }
+
+  function authH() { return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }; }
+
+  // ── auto-delete ──────────────────────────────────────────────
+  let autoDeleteEnabled = false;
+
+  async function loadAutoDelete() {
+    const res  = await fetch(`${API}/admin/upload/autodelete`, { headers: authH() });
+    const data = await res.json();
+    autoDeleteEnabled = data.enabled;
+    document.getElementById('autodelete-toggle').classList.toggle('on', data.enabled);
+    document.getElementById('autodelete-days').value = data.days;
+  }
+
+  document.getElementById('autodelete-toggle').addEventListener('click', async () => {
+    autoDeleteEnabled = !autoDeleteEnabled;
+    document.getElementById('autodelete-toggle').classList.toggle('on', autoDeleteEnabled);
+    await saveAutoDelete();
+  });
+
+  document.getElementById('autodelete-save').addEventListener('click', saveAutoDelete);
+
+  async function saveAutoDelete() {
+    const status = document.getElementById('autodelete-status');
+    const days   = parseInt(document.getElementById('autodelete-days').value) || 30;
+    try {
+      await fetch(`${API}/admin/upload/autodelete`, {
+        method: 'POST', headers: authH(),
+        body: JSON.stringify({ enabled: autoDeleteEnabled, days }),
+      });
+      status.textContent = 'saved ✓'; status.className = 'status ok';
+      setTimeout(() => { status.textContent = ''; status.className = 'status'; }, 2000);
+    } catch { status.textContent = 'error saving'; status.className = 'status err'; }
+  }
+
+  // ── upload keys ──────────────────────────────────────────────
+  async function loadKeys() {
+    const res  = await fetch(`${API}/admin/upload/keys`, { headers: authH() });
+    const keys = await res.json();
+    const list = document.getElementById('keys-list');
+    if (!keys.length) { list.innerHTML = '<div class="empty">no keys yet</div>'; return; }
+    list.innerHTML = keys.map(k => `
+      <div class="key-item" id="key-${k.id}">
+        <span class="key-name">${k.name}</span>
+        <span class="key-value">${k.key.slice(0,8)}••••••••••••••••••••••••</span>
+        <span class="key-date">${new Date(k.created_at).toLocaleDateString()}</span>
+        <div class="btn-row">
+          <button class="btn" onclick="copyKey('${k.key}')">copy</button>
+          <button class="btn danger" onclick="deleteKey('${k.id}')">revoke</button>
+        </div>
+      </div>`).join('');
+  }
+
+  document.getElementById('new-key-btn').addEventListener('click', async () => {
+    const name   = document.getElementById('new-key-name').value.trim();
+    const status = document.getElementById('key-status');
+    if (!name) { status.textContent = 'enter a name first'; status.className = 'status err'; return; }
+    const res  = await fetch(`${API}/admin/upload/keys`, { method: 'POST', headers: authH(), body: JSON.stringify({ name }) });
+    const data = await res.json();
+    document.getElementById('new-key-name').value = '';
+    status.textContent = ''; status.className = 'status';
+    showKeyModal(data.key);
+    loadKeys();
+  });
+
+  async function deleteKey(id) {
+    if (!confirm('Revoke this key? Anyone using it will lose upload access.')) return;
+    await fetch(`${API}/admin/upload/keys/${id}`, { method: 'DELETE', headers: authH() });
+    loadKeys();
+  }
+
+  function copyKey(key) {
+    navigator.clipboard.writeText(key);
+    document.getElementById('chatterino-header').textContent = `Authorization: Bearer ${key}`;
+  }
+
+  function showKeyModal(key) {
+    document.getElementById('key-modal-value').textContent = key;
+    document.getElementById('key-modal-overlay').classList.add('active');
+    document.getElementById('chatterino-header').textContent = `Authorization: Bearer ${key}`;
+  }
+  function closeKeyModal() { document.getElementById('key-modal-overlay').classList.remove('active'); }
+  function copyKeyModal() {
+    navigator.clipboard.writeText(document.getElementById('key-modal-value').textContent);
+    closeKeyModal();
+  }
+  document.getElementById('key-modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeKeyModal(); });
+
+  function copyText(el) {
+    navigator.clipboard.writeText(el.textContent);
+    const orig = el.textContent; el.textContent = 'copied!';
+    setTimeout(() => { el.textContent = orig; }, 1000);
+  }
+
+  // ── manual upload ────────────────────────────────────────────
+  const zone       = document.getElementById('upload-zone');
+  const input      = document.getElementById('upload-input');
+  const result     = document.getElementById('upload-result');
+  const resultLink = document.getElementById('upload-result-link');
+  const upStatus   = document.getElementById('upload-status');
+
+  async function doUpload(file) {
+    if (!file) return;
+    upStatus.textContent = 'uploading...'; upStatus.className = 'status';
+    result.classList.remove('visible');
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res  = await fetch(`${API}/admin/upload/manual`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      resultLink.textContent = data.link;
+      document.getElementById('copy-link-btn').onclick = () => navigator.clipboard.writeText(data.link);
+      document.getElementById('open-link-btn').onclick = () => window.open(data.link, '_blank');
+      result.classList.add('visible');
+      upStatus.textContent = 'uploaded ✓'; upStatus.className = 'status ok';
+      setTimeout(() => { upStatus.textContent = ''; upStatus.className = 'status'; }, 3000);
+    } catch (e) { upStatus.textContent = 'upload failed: ' + e.message; upStatus.className = 'status err'; }
+  }
+
+  input.addEventListener('change', () => doUpload(input.files[0]));
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); doUpload(e.dataTransfer.files[0]); });
+
+  loadAutoDelete();
+  loadKeys();
 </script>
 </body>
 </html>

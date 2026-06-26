@@ -9,35 +9,34 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0c; --line: rgba(255,255,255,0.08);
-    --text: #f2f2f0; --text-dim: #8a8a8f; --text-dimmer: #55555c;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; visibility: hidden; }
-  body::before {
-    content: ""; position: fixed; inset: 0;
-    background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
-    pointer-events: none;
-  }
-  .back-link {
-    position: fixed; top: 24px; left: 24px;
-    display: inline-flex; align-items: center; gap: 6px;
-    text-decoration: none; color: var(--text-dimmer);
-    font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
-    transition: color 0.2s; z-index: 10;
-  }
-  .back-link:hover { color: var(--text-dim); }
-  .back-link svg { width: 12px; height: 12px; }
-  .center {
-    position: fixed; inset: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 0;
-    pointer-events: none; user-select: none;
-  }
-  .coming-soon {
-    font-family: 'Space Grotesk', sans-serif; font-size: 13px;
-    font-weight: 500; color: var(--text-dimmer); letter-spacing: 0.08em;
-  }
+  :root{--bg:#0a0a0c;--card:#111114;--line:rgba(255,255,255,0.08);--line-strong:rgba(255,255,255,0.22);--text:#f2f2f0;--text-dim:#8a8a8f;--text-dimmer:#55555c;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;visibility:hidden;}
+  body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(255,255,255,0.025),transparent 40%),radial-gradient(circle at 80% 70%,rgba(255,255,255,0.02),transparent 40%);pointer-events:none;}
+  .page{max-width:800px;margin:0 auto;padding:48px 24px 80px;}
+  .back-link{position:fixed;top:24px;left:24px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--text-dimmer);font-size:12px;letter-spacing:0.04em;text-transform:uppercase;transition:color 0.2s;z-index:10;}
+  .back-link:hover{color:var(--text-dim);}
+  .back-link svg{width:12px;height:12px;}
+  .page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:8px;}
+  .page-sub{font-size:13px;color:var(--text-dim);margin-bottom:48px;}
+  .section-label{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dimmer);margin-bottom:14px;}
+  .file-grid{display:flex;flex-direction:column;gap:8px;}
+  .file-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;transition:border-color 0.2s;}
+  .file-item:hover{border-color:var(--line-strong);}
+  .file-thumb{width:40px;height:40px;border-radius:6px;object-fit:cover;background:#1a1a1e;flex-shrink:0;}
+  .file-info{flex:1;min-width:0;}
+  .file-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}
+  .file-meta{font-size:11px;color:var(--text-dimmer);}
+  .file-expiry{font-size:11px;color:#d98a8a;}
+  .btn-row{display:flex;gap:8px;flex-shrink:0;}
+  .btn{background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:8px;padding:6px 12px;color:var(--text-dim);font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:background 0.2s,color 0.2s;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;}
+  .btn:hover{background:rgba(255,255,255,0.12);color:var(--text);}
+  .btn.danger{color:#d98a8a;}
+  .btn.danger:hover{background:rgba(217,138,138,0.1);border-color:rgba(217,138,138,0.3);}
+  .empty{font-size:13px;color:var(--text-dimmer);text-align:center;padding:40px 0;}
+  .stats{display:flex;gap:24px;margin-bottom:24px;}
+  .stat{font-size:13px;color:var(--text-dim);}
+  .stat strong{font-family:'Space Grotesk',sans-serif;font-size:18px;color:var(--text);display:block;margin-bottom:2px;}
 </style>
 </head>
 <body>
@@ -47,26 +46,100 @@
   back
 </a>
 
-<div class="center">
-  <p class="coming-soon">uploads — coming soon...</p>
+<div class="page">
+  <div class="page-title">uploads</div>
+  <div class="page-sub">all uploaded files</div>
+
+  <div class="stats" id="stats"></div>
+  <div class="section-label">files</div>
+  <div class="file-grid" id="file-grid"><div class="empty">loading...</div></div>
 </div>
 
 <script>
+  const API   = 'https://api.satos.cc';
   const token = localStorage.getItem('admin_token');
+
   if (!token) {
     window.location.href = '/admin';
   } else {
-    fetch('https://api.satos.cc/admin/config', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(res => {
-      if (res.status === 401) {
-        localStorage.removeItem('admin_token');
-        window.location.href = '/admin';
-      } else {
-        document.body.style.visibility = 'visible';
-      }
-    }).catch(() => { document.body.style.visibility = 'visible'; });
+    fetch(`${API}/admin/config`, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => {
+        if (r.status === 401) { localStorage.removeItem('admin_token'); window.location.href = '/admin'; }
+        else document.body.style.visibility = 'visible';
+      })
+      .catch(() => { document.body.style.visibility = 'visible'; });
   }
+
+  function authH() { return { 'Authorization': `Bearer ${token}` }; }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(1) + ' MB';
+  }
+
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff/60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m/60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h/24)}d ago`;
+  }
+
+  function expiresIn(ts) {
+    const diff = ts - Date.now();
+    if (diff <= 0) return 'expired';
+    const d = Math.floor(diff/(1000*60*60*24));
+    if (d < 1) return 'expires today';
+    return `expires in ${d}d`;
+  }
+
+  async function loadFiles() {
+    const res   = await fetch(`${API}/admin/upload/files`, { headers: authH() });
+    const files = await res.json();
+    const grid  = document.getElementById('file-grid');
+    const stats = document.getElementById('stats');
+
+    const totalSize = files.reduce((a, f) => a + f.size, 0);
+    stats.innerHTML = `
+      <div class="stat"><strong>${files.length}</strong>files</div>
+      <div class="stat"><strong>${formatSize(totalSize)}</strong>total size</div>`;
+
+    if (!files.length) { grid.innerHTML = '<div class="empty">no uploads yet</div>'; return; }
+
+    grid.innerHTML = files.map(f => `
+      <div class="file-item" id="file-${f.id}">
+        <img class="file-thumb" src="https://satos.cc/x/${f.id}" alt="${f.original}" loading="lazy"
+             onerror="this.style.display='none'">
+        <div class="file-info">
+          <div class="file-name">${f.original}</div>
+          <div class="file-meta">
+            ${formatSize(f.size)} · uploaded by <strong>${f.key_name}</strong> · ${timeAgo(f.uploaded_at)}
+            ${f.delete_at ? `· <span class="file-expiry">${expiresIn(f.delete_at)}</span>` : ''}
+          </div>
+        </div>
+        <div class="btn-row">
+          <a class="btn" href="https://satos.cc/x/${f.id}" target="_blank">open</a>
+          <button class="btn" onclick="copyLink('${f.id}')">copy</button>
+          <button class="btn danger" onclick="deleteFile('${f.id}')">delete</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function copyLink(id) {
+    navigator.clipboard.writeText(`https://satos.cc/x/${id}`);
+  }
+
+  async function deleteFile(id) {
+    if (!confirm('Delete this file? This cannot be undone.')) return;
+    await fetch(`${API}/admin/upload/files/${id}`, { method: 'DELETE', headers: authH() });
+    document.getElementById(`file-${id}`)?.remove();
+    loadFiles();
+  }
+
+  loadFiles();
 </script>
 </body>
 </html>
