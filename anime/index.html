@@ -3,281 +3,712 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>satori</title>
+<title>satori / anime</title>
 <link rel="icon" href="https://segs.lol/IEPPV1.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0c;
-    --line: rgba(255,255,255,0.08);
+    --bg:          #0a0a0c;
+    --card:        #111114;
+    --line:        rgba(255,255,255,0.08);
     --line-strong: rgba(255,255,255,0.22);
-    --text: #f2f2f0;
-    --text-dim: #8a8a8f;
+    --glow:        rgba(255,255,255,0.06);
+    --glow-strong: rgba(255,255,255,0.14);
+    --text:        #f2f2f0;
+    --text-dim:    #8a8a8f;
     --text-dimmer: #55555c;
   }
 
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    overflow: hidden;
+    min-height: 100vh;
   }
 
   body::before {
     content: "";
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background-image:
-      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.025), transparent 40%),
-      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
-    pointer-events: none;
+      radial-gradient(circle at 15% 50%, rgba(255,182,193,0.03), transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.015), transparent 40%);
+    pointer-events: none; z-index: 0;
   }
 
+  .page {
+    position: relative; z-index: 1;
+    max-width: 860px; margin: 0 auto;
+    padding: 80px 24px 100px;
+  }
+
+  /* ── back link ── */
   .back-link {
-    position: fixed;
-    top: 24px;
-    left: 24px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    text-decoration: none;
-    color: var(--text-dimmer);
-    font-size: 12px;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transition: color 0.2s;
-    z-index: 10;
+    position: fixed; top: 24px; left: 24px;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; color: var(--text-dimmer);
+    font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+    transition: color 0.2s; z-index: 10;
   }
-
   .back-link:hover { color: var(--text-dim); }
   .back-link svg { width: 12px; height: 12px; }
 
-  .center {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    pointer-events: none;
+  /* ── section label ── */
+  .section-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text-dimmer); margin-bottom: 14px;
+  }
+  .section-label.centered { text-align: center; }
+
+  /* ── recently watched slider ── */
+  .slider-wrap { position: relative; margin-bottom: 52px; }
+
+  .slider {
+    display: flex; gap: 10px;
+    overflow-x: auto; overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 4px;
+    padding-left:  calc((100% - (88px * 6 + 10px * 5)) / 2);
+    padding-right: calc((100% - (88px * 6 + 10px * 5)) / 2);
+  }
+  .slider::-webkit-scrollbar { display: none; }
+
+  .anime-card {
+    position: relative;
+    flex: 0 0 88px; width: 88px; height: 88px;
+    scroll-snap-align: start; border-radius: 12px;
+    cursor: default; z-index: 1;
+    transition: flex-basis 0.25s ease, width 0.25s ease;
+    display: flex; align-items: stretch;
+  }
+  .anime-card:hover { flex-basis: 248px; width: 248px; overflow: visible; z-index: 10; }
+
+  .anime-art {
+    width: 88px; height: 88px; border-radius: 12px;
+    object-fit: cover; display: block;
+    background: #1a1a1e; flex-shrink: 0;
+    transition: border-radius 0.25s ease;
+  }
+  .anime-card:hover .anime-art { border-radius: 12px 0 0 12px; }
+
+  .anime-art-placeholder {
+    width: 88px; height: 88px; border-radius: 12px;
+    background: #1a1a1e; display: flex; align-items: center;
+    justify-content: center; color: var(--text-dimmer);
+    font-size: 22px; flex-shrink: 0;
+    transition: border-radius 0.25s ease;
+  }
+  .anime-card:hover .anime-art-placeholder { border-radius: 12px 0 0 12px; }
+
+  .anime-info {
+    width: 0; height: 88px;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0; background: rgba(14,14,18,0.92);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--line-strong); border-left: none;
+    border-radius: 0 12px 12px 0;
+    overflow: hidden; opacity: 0;
+    transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .anime-card:hover .anime-info { width: 160px; opacity: 1; padding: 0 14px; }
+
+  .anime-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+  .anime-ep   { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .anime-time { font-size: 10px; color: var(--text-dimmer); margin-top: 4px; }
+
+  /* ── heatmap ── */
+  .heatmap-section { margin-bottom: 52px; }
+
+  .heatmap-header {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; margin-bottom: 6px;
+  }
+  .heatmap-year {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    min-width: 40px; text-align: center;
+  }
+  .year-btn {
+    background: none; border: 1px solid var(--line);
+    border-radius: 6px; color: var(--text-dimmer);
+    width: 24px; height: 24px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, color 0.2s; font-size: 12px; flex-shrink: 0;
+  }
+  .year-btn:hover { border-color: var(--line-strong); color: var(--text); }
+  .year-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .heatmap-outer { overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+  .heatmap-outer::-webkit-scrollbar { display: none; }
+
+  .heatmap-inner { width: max-content; margin: 0 auto; }
+
+  .heatmap-month-row {
+    display: flex; gap: 3px;
+    margin-bottom: 4px; position: relative; height: 14px;
+  }
+  .heatmap-month-label {
+    position: absolute;
+    font-size: 10px; color: var(--text-dimmer);
+    font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.04em;
+    line-height: 14px;
+  }
+
+  .heatmap-grid { display: flex; gap: 3px; }
+  .heatmap-col  { display: flex; flex-direction: column; gap: 3px; }
+
+  .heatmap-cell {
+    width: 11px; height: 11px; border-radius: 2px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.04);
+    cursor: default; transition: border-color 0.15s;
+  }
+  .heatmap-cell:hover { border-color: rgba(255,255,255,0.3); }
+  .heatmap-cell[data-level="1"] { background: rgba(255,183,197,0.25); border-color: rgba(255,183,197,0.12); }
+  .heatmap-cell[data-level="2"] { background: rgba(255,150,175,0.45); border-color: rgba(255,150,175,0.22); }
+  .heatmap-cell[data-level="3"] { background: rgba(255,133,168,0.65); border-color: rgba(255,133,168,0.35); }
+  .heatmap-cell[data-level="4"] { background: rgba(255,100,155,0.85); border-color: rgba(255,100,155,0.45); box-shadow: 0 0 6px rgba(255,100,155,0.25); }
+
+  .heatmap-tooltip {
+    position: fixed; z-index: 100;
+    background: var(--card); border: 1px solid var(--line-strong);
+    border-radius: 8px; padding: 6px 10px;
+    font-size: 11px; color: var(--text-dim);
+    pointer-events: none; white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    opacity: 0; transition: opacity 0.1s;
+  }
+  .heatmap-tooltip.visible { opacity: 1; }
+  .heatmap-tooltip strong { color: var(--text); font-family: 'Space Grotesk', sans-serif; }
+
+  .heatmap-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px;
+  }
+  .heatmap-loading { font-size: 11px; color: var(--text-dimmer); min-height: 16px; }
+  .heatmap-legend  { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--text-dimmer); }
+  .legend-cell {
+    width: 11px; height: 11px; border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* ── stat bars ── */
+  .stats-section { margin-bottom: 52px; }
+  .stat-bar-group { display: flex; flex-direction: column; gap: 8px; }
+
+  .stat-bar-item { display: flex; flex-direction: column; }
+
+  .stat-bar-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 12px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, border-radius 0.15s;
     user-select: none;
   }
-
-  .bonsai {
-    font-family: 'Courier New', monospace;
-    font-size: 10px;
-    line-height: 1.1;
-    letter-spacing: 0;
-    color: var(--text-dimmer);
-    white-space: pre;
-    opacity: 0.85;
-    transition: opacity 0.6s ease-in-out;
+  .stat-bar-item.open .stat-bar-header {
+    border-radius: 10px 10px 0 0;
+    border-bottom-color: transparent;
+    background: #141418; border-color: var(--line-strong);
   }
+  .stat-bar-header:hover { border-color: var(--line-strong); background: #141418; }
 
-  .bonsai .leaf  { color: #cfcfcf; }
-  .bonsai .trunk { color: #8a8a8f; }
-  .bonsai .pot   { color: #6a6a6f; }
-
-  .coming-soon {
-    margin-top: 28px;
+  .stat-bar-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .stat-bar-label {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-dimmer);
-    letter-spacing: 0.08em;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .stat-bar-track {
+    flex: 1; height: 4px; background: rgba(255,255,255,0.06);
+    border-radius: 2px; overflow: hidden; min-width: 40px;
+  }
+  .stat-bar-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, rgba(255,133,168,0.7), rgba(255,183,197,0.9));
+    width: 0; transition: width 0.6s cubic-bezier(0.16,1,0.3,1);
+  }
+  .stat-bar-count {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    flex-shrink: 0; margin-left: 10px;
+  }
+  .stat-bar-chevron {
+    color: var(--text-dimmer); font-size: 10px; flex-shrink: 0;
+    margin-left: 8px; transition: transform 0.2s;
+  }
+  .stat-bar-item.open .stat-bar-chevron { transform: rotate(180deg); }
+
+  /* ── expanded list ── */
+  .stat-bar-expanded {
+    display: none;
+    background: #0d0d10;
+    border: 1px solid var(--line-strong); border-top: none;
+    border-radius: 0 0 10px 10px; overflow: hidden;
+  }
+  .stat-bar-item.open .stat-bar-expanded { display: block; }
+
+  .expanded-list { display: flex; flex-direction: column; }
+
+  .expanded-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-bottom: 1px solid var(--line);
+    text-decoration: none; color: inherit; transition: background 0.15s;
+  }
+  .expanded-item:last-child { border-bottom: none; }
+  .expanded-item:hover { background: rgba(255,255,255,0.03); }
+
+  .expanded-cover {
+    width: 36px; height: 52px; border-radius: 4px;
+    object-fit: cover; background: #1a1a1e; flex-shrink: 0;
+  }
+  .expanded-cover-placeholder {
+    width: 36px; height: 52px; border-radius: 4px;
+    background: #1a1a1e; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dimmer); font-size: 14px;
+  }
+  .expanded-info { flex: 1; min-width: 0; }
+  .expanded-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+  }
+  .expanded-meta { font-size: 11px; color: var(--text-dimmer); }
+  .expanded-score {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 12px; font-weight: 700; color: var(--text-dim); flex-shrink: 0;
+  }
+
+  /* ── shimmer loading ── */
+  .shimmer {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 12px; animation: shimmer 1.5s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+
+  /* ── blossom tree ── */
+  .blossom-tree {
+    position: fixed; left: -4px; bottom: 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px; line-height: 1.15; letter-spacing: 0;
+    white-space: pre; pointer-events: none; user-select: none;
+    z-index: 3; opacity: 0.90;
+  }
+  .blossom-tree .trunk        { color: #6b4c36; }
+  .blossom-tree .branch       { color: #8a6848; }
+  .blossom-tree .branch-thin  { color: #7a5a3e; }
+  .blossom-tree .blossom      { color: #ffb7c5; text-shadow: 0 0 6px rgba(255,150,180,0.5); }
+  .blossom-tree .blossom-deep { color: #ff85a8; text-shadow: 0 0 8px rgba(255,100,160,0.6); }
+  .blossom-tree .blossom-pale { color: #ffd6e3; text-shadow: 0 0 4px rgba(255,180,210,0.4); }
+  .blossom-tree .root         { color: #5a4030; }
+  @media (max-width: 860px) { .blossom-tree { font-size: 10px; } }
+
+  .petal {
+    position: fixed; font-family: 'Courier New', monospace;
+    pointer-events: none; user-select: none; z-index: 4;
+    font-size: 13px; line-height: 1; will-change: transform, opacity;
+    animation: drift linear forwards;
+  }
+  @keyframes drift {
+    0%   { transform: translate(0,0) rotate(var(--rot-start)); opacity: 0; }
+    6%   { opacity: var(--petal-opacity); }
+    90%  { opacity: calc(var(--petal-opacity) * 0.5); }
+    100% { transform: translate(var(--drift-x),var(--drift-y)) rotate(var(--rot-end)); opacity: 0; }
+  }
+  #bg-layer    { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+  #petal-floor {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 0;
+    overflow: visible; pointer-events: none; user-select: none;
+    z-index: 2; font-family: 'Courier New', monospace; line-height: 1.1;
+  }
+  .floor-col   { position: absolute; bottom: 0; display: flex; flex-direction: column-reverse; align-items: center; }
+  .floor-petal { display: block; line-height: 1; transition: opacity 2s ease-out; }
 </style>
 </head>
 <body>
+
+<div id="bg-layer"></div>
+<div id="petal-floor"></div>
+<div class="blossom-tree" id="blossom-tree" aria-hidden="true"></div>
+<div class="heatmap-tooltip" id="heatmap-tooltip"></div>
 
 <a class="back-link" href="/home">
   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
   back
 </a>
 
-<div class="center">
-  <div class="bonsai" id="bonsai" aria-hidden="true"></div>
-  <p class="coming-soon">coming soon...</p>
+<div class="page">
+
+  <!-- recently watched -->
+  <div class="slider-wrap">
+    <div class="section-label centered">recently watched</div>
+    <div class="slider" id="slider">
+      <div class="shimmer" style="flex:0 0 88px;height:88px"></div>
+      <div class="shimmer" style="flex:0 0 88px;height:88px"></div>
+      <div class="shimmer" style="flex:0 0 88px;height:88px"></div>
+      <div class="shimmer" style="flex:0 0 88px;height:88px"></div>
+      <div class="shimmer" style="flex:0 0 88px;height:88px"></div>
+      <div class="shimmer" style="flex:0 0 88px;height:88px"></div>
+    </div>
+  </div>
+
+  <!-- heatmap -->
+  <div class="heatmap-section">
+    <div class="heatmap-header">
+      <button class="year-btn" id="year-prev">&#8592;</button>
+      <span class="heatmap-year" id="heatmap-year-label"></span>
+      <button class="year-btn" id="year-next">&#8594;</button>
+    </div>
+    <div class="section-label centered">watch activity</div>
+    <div class="heatmap-outer">
+      <div class="heatmap-inner" id="heatmap-inner">
+        <div class="heatmap-month-row" id="heatmap-month-row"></div>
+        <div class="heatmap-grid"     id="heatmap-grid"></div>
+      </div>
+    </div>
+    <div class="heatmap-footer">
+      <span class="heatmap-loading" id="heatmap-loading"></span>
+      <div class="heatmap-legend">
+        <span>less</span>
+        <div class="legend-cell" style="background:rgba(255,255,255,0.04)"></div>
+        <div class="legend-cell" style="background:rgba(255,183,197,0.25)"></div>
+        <div class="legend-cell" style="background:rgba(255,150,175,0.45)"></div>
+        <div class="legend-cell" style="background:rgba(255,133,168,0.65)"></div>
+        <div class="legend-cell" style="background:rgba(255,100,155,0.85)"></div>
+        <span>more</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- completed -->
+  <div class="stats-section">
+    <div class="section-label">completed</div>
+    <div class="stat-bar-group" id="completed-list">
+      <div class="shimmer" style="height:40px;border-radius:10px"></div>
+    </div>
+  </div>
+
+  <!-- genres -->
+  <div class="stats-section">
+    <div class="section-label">by genre</div>
+    <div class="stat-bar-group" id="genre-list">
+      <div class="shimmer" style="height:40px;border-radius:10px"></div>
+      <div class="shimmer" style="height:40px;border-radius:10px"></div>
+      <div class="shimmer" style="height:40px;border-radius:10px"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-  const bonsaiEl  = document.getElementById('bonsai');
-  const GRID_W    = 28;
-  const GRID_H    = 14;
-  const BASE_LIFE = 24;
+const API = 'https://api.satos.cc';
 
-  let grid, branches, rngSeed, growTimer;
+// ── client-side session cache — avoids re-fetching on back/forward ─
+const MEM = {};
+function memGet(key) { return MEM[key] ?? null; }
+function memSet(key, val) { MEM[key] = val; }
 
-  function rand() {
-    rngSeed = (rngSeed * 9301 + 49297) % 233280;
-    return rngSeed / 233280;
+// ── time helper ───────────────────────────────────────────────────
+function timeAgo(ts) {
+  const diff = Date.now() - ts * 1000;
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+// ── recently watched ──────────────────────────────────────────────
+async function loadRecent() {
+  let entries = memGet('recent');
+  if (!entries) {
+    const res = await fetch(`${API}/anime/recent`);
+    entries   = await res.json();
+    memSet('recent', entries);
   }
 
-  function makeGrid() {
-    const g = [];
-    for (let y = 0; y < GRID_H; y++) g.push(new Array(GRID_W).fill(' '));
-    return g;
+  const slider = document.getElementById('slider');
+  if (!entries.length) {
+    slider.innerHTML = '<div style="font-size:13px;color:var(--text-dimmer);padding:20px 0">no recent activity</div>';
+    return;
   }
 
-  let leafCells = [], fallingLeaves = [];
+  slider.innerHTML = entries.map(a => {
+    const ep  = a.status === 'watched episode' ? `ep ${a.progress}` : (a.status || '');
+    const art = a.cover
+      ? `<img class="anime-art" src="${a.cover}" alt="${a.title}" loading="lazy">`
+      : `<div class="anime-art-placeholder">▶</div>`;
+    return `
+      <div class="anime-card">
+        ${art}
+        <div class="anime-info">
+          <div class="anime-title">${a.title}</div>
+          <div class="anime-ep">${ep}</div>
+          <div class="anime-time">${timeAgo(a.createdAt)}</div>
+        </div>
+      </div>`;
+  }).join('');
 
-  function setCell(x, y, ch, cls) {
-    if (x < 0 || x >= GRID_W || y < 0 || y >= GRID_H) return;
-    grid[y][x] = cls ? `<span class="${cls}">${ch}</span>` : ch;
-    if (cls === 'leaf') leafCells.push({ x, y });
+  // scroll wheel → horizontal
+  slider.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      slider.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+}
+
+// ── heatmap ───────────────────────────────────────────────────────
+const MONTHS   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let   hmYear   = new Date().getFullYear();
+let   hmLoading = false;
+
+function levelFor(n) {
+  if (!n)    return 0;
+  if (n < 2) return 1;
+  if (n < 4) return 2;
+  if (n < 7) return 3;
+  return 4;
+}
+
+async function renderHeatmap(year) {
+  if (hmLoading) return;
+  hmLoading = true;
+
+  document.getElementById('heatmap-year-label').textContent = year;
+  document.getElementById('year-next').disabled = year >= new Date().getFullYear();
+  document.getElementById('year-prev').disabled = false;
+  document.getElementById('heatmap-loading').textContent = 'loading...';
+
+  const cacheKey = `heatmap:${year}`;
+  let dayMap = memGet(cacheKey);
+  if (!dayMap) {
+    try {
+      const res = await fetch(`${API}/anime/heatmap?year=${year}`);
+      dayMap    = await res.json();
+      memSet(cacheKey, dayMap);
+    } catch {
+      document.getElementById('heatmap-loading').textContent = 'failed to load';
+      hmLoading = false;
+      return;
+    }
   }
+  document.getElementById('heatmap-loading').textContent = '';
 
-  const TRUNK = 0, SHOOT_LEFT = 1, SHOOT_RIGHT = 2;
+  const grid     = document.getElementById('heatmap-grid');
+  const monthRow = document.getElementById('heatmap-month-row');
+  grid.innerHTML     = '';
+  monthRow.innerHTML = '';
 
-  function pushBranch(x, y, type, lifeLeft) {
-    branches.push({ x, y, type, life: lifeLeft, age: 0, shot: false });
-  }
+  // Build week columns — Sunday-aligned
+  const yearStart = new Date(`${year}-01-01`);
+  const yearEnd   = new Date(`${year}-12-31`);
+  const startDay  = yearStart.getDay(); // 0=Sun
 
-  function stepDirection(b) {
-    if (b.type === TRUNK) {
-      const wobbleChance = b.age < 4 ? 0.12 : 0.32;
-      const r = rand();
-      let dx = 0;
-      if (r < wobbleChance / 2) dx = -1;
-      else if (r < wobbleChance) dx = 1;
-      return { dx, dy: -1, ch: dx === 0 ? '|' : (dx < 0 ? '\\' : '/') };
-    } else if (b.type === SHOOT_LEFT) {
-      const dy = rand() < 0.4 ? -1 : 0;
-      return { dx: -1, dy, ch: dy < 0 ? '\\' : '_' };
+  const cur = new Date(yearStart);
+  cur.setDate(cur.getDate() - startDay);
+
+  const CELL = 11, GAP = 3;
+  let colIndex = 0, col = null;
+  const monthSeen = new Set();
+
+  while (cur <= yearEnd) {
+    if (cur.getDay() === 0) {
+      col = document.createElement('div');
+      col.className = 'heatmap-col';
+      grid.appendChild(col);
+
+      // Check if this column contains a month boundary
+      for (let d = 0; d < 7; d++) {
+        const p = new Date(cur);
+        p.setDate(p.getDate() + d);
+        if (p >= yearStart && p <= yearEnd && p.getDate() === 1 && !monthSeen.has(p.getMonth())) {
+          monthSeen.add(p.getMonth());
+          const lbl = document.createElement('span');
+          lbl.className   = 'heatmap-month-label';
+          lbl.textContent = MONTHS[p.getMonth()];
+          lbl.style.left  = (colIndex * (CELL + GAP)) + 'px';
+          monthRow.appendChild(lbl);
+          break;
+        }
+      }
+      colIndex++;
+    }
+
+    const inYear = cur >= yearStart && cur <= yearEnd;
+    const cell   = document.createElement('div');
+    cell.className = 'heatmap-cell';
+
+    if (inYear) {
+      const key   = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth()+1).padStart(2,'0')}-${String(cur.getUTCDate()).padStart(2,'0')}`;
+      const count = dayMap[key] || 0;
+      cell.dataset.level = levelFor(count);
+      const label = cur.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+      cell.dataset.tip = count
+        ? `<strong>${count} activit${count===1?'y':'ies'}</strong> · ${label}`
+        : label;
     } else {
-      const dy = rand() < 0.4 ? -1 : 0;
-      return { dx: 1, dy, ch: dy < 0 ? '/' : '_' };
+      cell.style.opacity       = '0';
+      cell.style.pointerEvents = 'none';
     }
+
+    col.appendChild(cell);
+    cur.setDate(cur.getDate() + 1);
   }
 
-  function stepBranch(b) {
-    if (b.life <= 0) return;
-    b.age++; b.life--;
-    const { dx, dy, ch } = stepDirection(b);
-    if (b.type === TRUNK && !b.shot && b.life > 6 && b.age >= 3) {
-      const forceChance = (b.age === 5 || b.age === 9) ? 0.8 : 0.15;
-      if (rand() < forceChance) {
-        pushBranch(b.x, b.y, rand() < 0.5 ? SHOOT_LEFT : SHOOT_RIGHT, Math.max(4, Math.floor(b.life * 0.65)));
-        b.shot = true;
-        if (rand() < 0.5) b.shot = false;
-      }
-    }
-    setCell(b.x, b.y, ch, 'trunk');
-    b.x += dx; b.y += dy;
-    if (b.life <= 2 || b.y <= 1) {
-      for (const [lx, ly] of [[0,0],[-1,0],[1,0],[0,-1],[-1,-1],[1,-1],[0,1],[1,1],[-1,1]])
-        if (rand() < 0.6) setCell(b.x + lx, b.y + ly, '&', 'leaf');
-    }
-  }
+  // Set month row width to match grid
+  monthRow.style.width = (colIndex * (CELL + GAP) - GAP) + 'px';
 
-  function initTree() {
-    rngSeed = (Date.now() % 100000) + 41;
-    grid = makeGrid(); branches = []; leafCells = []; fallingLeaves = [];
-    pushBranch(Math.floor(GRID_W / 2), GRID_H - 3, TRUNK, BASE_LIFE);
-    // top rim: ___________
-    const rimStr = ' '.repeat(2) + '_'.repeat(GRID_W - 4) + ' '.repeat(2);
-    for (let i = 0; i < rimStr.length; i++) setCell(i, GRID_H - 3, rimStr[i], 'pot');
-    // bottom bowl: \_________/
-    const bowlInner = Math.max(2, GRID_W - 8);
-    const bowlPad   = Math.floor((GRID_W - bowlInner - 2) / 2);
-    const bowlStr   = ' '.repeat(bowlPad) + '\\' + '_'.repeat(bowlInner) + '/' + ' '.repeat(bowlPad);
-    for (let i = 0; i < bowlStr.length; i++) setCell(i, GRID_H - 2, bowlStr[i], 'pot');
-  }
-
-  function renderGrid() {
-    const c = grid.map(r => r.slice());
-    for (const l of fallingLeaves)
-      if (l.y >= 0 && l.y < GRID_H && l.x >= 0 && l.x < GRID_W)
-        c[l.y][l.x] = `<span class="leaf">&</span>`;
-    bonsaiEl.innerHTML = c.map(r => r.join('')).join('\n');
-  }
-
-  function growStep() {
-    if (!branches.length) return false;
-    const alive = [];
-    for (const b of branches) {
-      if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) {
-        stepBranch(b);
-        if (b.life > 0 && b.y > 0 && b.x > 0 && b.x < GRID_W - 1) alive.push(b);
-      }
-    }
-    branches = alive; renderGrid();
-    return branches.length > 0;
-  }
-
-  function detachOneLeaf() {
-    if (!leafCells.length) return false;
-    const idx = Math.floor(rand() * leafCells.length);
-    const { x, y } = leafCells.splice(idx, 1)[0];
-    setCell(x, y, ' ', null);
-    fallingLeaves.push({ x, y, settleDelay: Math.floor(rand() * 3) });
-    renderGrid(); return true;
-  }
-
-  function tickFallingLeaves() {
-    if (!fallingLeaves.length) return false;
-    const still = [];
-    for (const leaf of fallingLeaves) {
-      if (leaf.settleDelay > 0) { leaf.settleDelay--; still.push(leaf); continue; }
-      const nextY = leaf.y + 1;
-      if (nextY >= GRID_H - 1) continue;
-      let nextX = leaf.x;
-      const drift = rand();
-      if (drift < 0.18) nextX -= 1;
-      else if (drift < 0.36) nextX += 1;
-      leaf.x = Math.max(1, Math.min(GRID_W - 2, nextX));
-      leaf.y = nextY;
-      still.push(leaf);
-    }
-    fallingLeaves = still; renderGrid();
-    return fallingLeaves.length > 0 || leafCells.length > 0;
-  }
-
-  let detachTimer, fallTimer;
-
-  function startLeafFall() {
-    detachTimer = setInterval(() => { if (!detachOneLeaf()) clearInterval(detachTimer); }, 1400);
-    fallTimer   = setInterval(() => {
-      if (!tickFallingLeaves()) {
-        clearInterval(detachTimer); clearInterval(fallTimer);
-        setTimeout(runCycle, 4000);
-      }
-    }, 350);
-  }
-
-  function runCycle() {
-    bonsaiEl.style.opacity = '0';
-    setTimeout(() => {
-      initTree(); renderGrid(); bonsaiEl.style.opacity = '0.85';
-      growTimer = setInterval(() => {
-        if (!growStep()) { clearInterval(growTimer); setTimeout(startLeafFall, 6000); }
-      }, 3000);
-    }, 500);
-  }
-
-  runCycle();
-
-  // ── type page name to navigate ─────────────────────────────────
-  const NAV = { home:'/home', japan:'/jp', music:'/music', anime:'/anime', github:'/git', movies:'/movies', socials:'/' };
-  const MAX_LEN = Math.max(...Object.keys(NAV).map(k => k.length));
-  let navBuffer = '';
-  document.addEventListener('keydown', (e) => {
-    if (e.metaKey || e.ctrlKey || e.altKey || e.key.length !== 1) return;
-    navBuffer += e.key.toLowerCase();
-    if (navBuffer.length > MAX_LEN) navBuffer = navBuffer.slice(-MAX_LEN);
-    for (const [word, url] of Object.entries(NAV)) {
-      if (navBuffer.endsWith(word)) { window.location.href = url; return; }
-    }
+  // Tooltip
+  const tooltip = document.getElementById('heatmap-tooltip');
+  grid.addEventListener('mousemove', e => {
+    const cell = e.target.closest('.heatmap-cell');
+    if (!cell?.dataset.tip) { tooltip.classList.remove('visible'); return; }
+    tooltip.innerHTML = cell.dataset.tip;
+    tooltip.classList.add('visible');
+    const r = cell.getBoundingClientRect();
+    tooltip.style.left = (r.left + r.width/2 - tooltip.offsetWidth/2) + 'px';
+    tooltip.style.top  = (r.top - tooltip.offsetHeight - 8) + 'px';
   });
-</script>
+  grid.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
 
+  hmLoading = false;
+}
+
+document.getElementById('year-prev').addEventListener('click', () => { hmYear--; renderHeatmap(hmYear); });
+document.getElementById('year-next').addEventListener('click', () => { hmYear++; renderHeatmap(hmYear); });
+
+// ── stats: completed + genres ─────────────────────────────────────
+function coverHTML(cover, title, portrait) {
+  const w = portrait ? 36 : 32, h = portrait ? 52 : 32;
+  const r = portrait ? 4 : 6;
+  if (cover) return `<img class="expanded-cover" src="${cover}" alt="${title}" loading="lazy" style="width:${w}px;height:${h}px;border-radius:${r}px">`;
+  return `<div class="expanded-cover-placeholder" style="width:${w}px;height:${h}px;border-radius:${r}px">▶</div>`;
+}
+
+function expandedItemHTML(e) {
+  const meta = [e.episodes ? `${e.episodes} ep` : '', e.year || ''].filter(Boolean).join(' · ');
+  return `
+    <a class="expanded-item" href="${e.siteUrl}" target="_blank" rel="noopener">
+      ${coverHTML(e.cover, e.title, true)}
+      <div class="expanded-info">
+        <div class="expanded-title">${e.title}</div>
+        <div class="expanded-meta">${meta}</div>
+      </div>
+      ${e.score ? `<div class="expanded-score">${e.score}/10</div>` : ''}
+    </a>`;
+}
+
+function makeBarItem(label, count, maxCount, entries, uid) {
+  const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
+  const id  = `bar-${uid}`;
+  return `
+    <div class="stat-bar-item" id="${id}">
+      <div class="stat-bar-header" onclick="toggleBar('${id}')">
+        <div class="stat-bar-left">
+          <span class="stat-bar-label">${label}</span>
+          <div class="stat-bar-track">
+            <div class="stat-bar-fill" data-pct="${pct}"></div>
+          </div>
+        </div>
+        <span class="stat-bar-count">${count}</span>
+        <span class="stat-bar-chevron">▾</span>
+      </div>
+      <div class="stat-bar-expanded">
+        <div class="expanded-list">${entries.map(expandedItemHTML).join('')}</div>
+      </div>
+    </div>`;
+}
+
+function toggleBar(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+// Animate bars in after render
+function animateBars() {
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.stat-bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  });
+}
+
+async function loadStats() {
+  let stats = memGet('stats');
+  if (!stats) {
+    const res = await fetch(`${API}/anime/stats`);
+    stats     = await res.json();
+    memSet('stats', stats);
+  }
+
+  const { completed, genres } = stats;
+
+  // Completed — single bar, all entries
+  document.getElementById('completed-list').innerHTML = makeBarItem(
+    `${completed.length} completed`,
+    completed.length,
+    completed.length,
+    completed,
+    'completed'
+  );
+
+  // Genres
+  const maxGenre = genres[0]?.count || 1;
+  document.getElementById('genre-list').innerHTML = genres.map((g, i) =>
+    makeBarItem(g.name, g.count, maxGenre, g.entries, `genre-${i}`)
+  ).join('');
+
+  animateBars();
+}
+
+// ── cherry blossom tree ───────────────────────────────────────────
+const treeEl=document.getElementById('blossom-tree');
+const GRID_W=58,GRID_H=42;let grid,blossomCells;
+function makeGrid(){const g=[];for(let y=0;y<GRID_H;y++)g.push(new Array(GRID_W).fill(' '));return g;}
+function setCell(x,y,ch,cls){if(x<0||x>=GRID_W||y<0||y>=GRID_H)return;const ex=grid[y][x];if(typeof ex==='string'&&ex.includes('blossom'))return;grid[y][x]=cls?`<span class="${cls}">${ch}</span>`:ch;if(cls&&cls.startsWith('blossom'))blossomCells.push({x,y});}
+let rngSeed=137;
+function rand(){rngSeed=(rngSeed*1664525+1013904223)&0xffffffff;return(rngSeed>>>0)/0xffffffff;}
+function drawBranch(x,y,dx,dy,len,cls){for(let i=0;i<len;i++){const nx=Math.round(x+dx*i),ny=Math.round(y+dy*i);let ch;if(Math.abs(dx)<0.1)ch='|';else if(Math.abs(dy)<0.1)ch='_';else if(dx>0&&dy<0)ch='/';else if(dx<0&&dy<0)ch='\\';else if(dx>0&&dy>0)ch='\\';else ch='/';setCell(nx,ny,ch,cls);}}
+function placeBlossom(cx,cy,r){const o=[];for(let ly=-r;ly<=r;ly++)for(let lx=-r*2;lx<=r*2;lx++){const d=Math.sqrt((lx/(r*2.1))**2+(ly/(r*0.85))**2);if(d<=1)o.push([lx,ly]);}for(const[lx,ly]of o){if(rand()<0.72){let cls,ch;const v=rand();if(v<0.15){cls='blossom-deep';ch=rand()<0.5?'*':'o';}else if(v<0.55){cls='blossom';ch=rand()<0.4?'*':rand()<0.5?'.':'o';}else{cls='blossom-pale';ch=rand()<0.6?'.':'*';}setCell(cx+lx,cy+ly,ch,cls);}}}
+function initTree(){rngSeed=137;grid=makeGrid();blossomCells=[];const bX=18,bY=GRID_H-1,bH=22;for(let i=0;i<bH;i++){const t=i/bH,w=Math.round(t*t*2),x=bX+w,y=bY-i;setCell(x,y,w>0&&i===bH-1?'/':'|','trunk');if(i<8)setCell(x+1,y,'|','trunk');if(i<4)setCell(x-1,y,'|','root');}const rx=bX,ry=bY;for(let i=1;i<=5;i++){setCell(rx-i,ry,'\\','root');setCell(rx+1+i,ry,'/','root');}setCell(rx-6,ry,'_','root');setCell(rx+7,ry,'_','root');for(let i=1;i<=3;i++){setCell(rx-i,ry-1,'\\','root');setCell(rx+1+i,ry-1,'/','root');}const tX=bX+2,tY=bY-bH;const sc=[{sx:-1,sy:6,a:145,l:13},{sx:-1,sy:10,a:155,l:10},{sx:2,sy:5,a:35,l:14},{sx:2,sy:9,a:25,l:11},{sx:1,sy:0,a:100,l:9},{sx:1,sy:0,a:80,l:9},{sx:0,sy:2,a:120,l:8},{sx:2,sy:2,a:60,l:8},{sx:0,sy:7,a:130,l:7},{sx:2,sy:7,a:50,l:7}];const tips=[];for(const s of sc){const sX=tX+s.sx,sY=tY+s.sy,rad=(s.a*Math.PI)/180,dx=Math.cos(rad),dy=-Math.sin(rad);drawBranch(sX,sY,dx,dy,s.l,s.l>=11?'branch':'branch-thin');tips.push({x:Math.round(sX+dx*s.l),y:Math.round(sY+dy*s.l),r:Math.floor(s.l/3.2)+2});for(let k=0;k<2;k++){if(rand()<0.65){const sp=0.4+rand()*0.4,bx=Math.round(sX+dx*s.l*sp),by=Math.round(sY+dy*s.l*sp),sr=(rand()<0.5?1:-1)*(25+rand()*30),br=((s.a+sr)*Math.PI)/180,sl=Math.floor(s.l*(0.4+rand()*0.3));drawBranch(bx,by,Math.cos(br),-Math.sin(br),sl,'branch-thin');tips.push({x:Math.round(bx+Math.cos(br)*sl),y:Math.round(by-Math.sin(br)*sl),r:2});}}}for(const t of tips)placeBlossom(t.x,t.y,t.r);for(let p=0;p<6;p++)placeBlossom(tX+Math.round((rand()-0.45)*22),tY-Math.round(rand()*8),3+Math.floor(rand()*3));}
+initTree();treeEl.innerHTML=grid.map(r=>r.join('')).join('\n');
+
+// ── drifting petals ───────────────────────────────────────────────
+const PC=['*','.','o',"'",','],PCOUNT=55;
+const PCOLS=['hsl(345,100%,88%)','hsl(350,100%,82%)','hsl(340,100%,78%)','hsl(355,100%,92%)','hsl(320,80%,85%)'];
+function bOrigin(){if(!blossomCells.length)return null;const c=blossomCells[Math.floor(Math.random()*blossomCells.length)];const r=treeEl.getBoundingClientRect();return{x:r.left+c.x*7.8+(Math.random()-0.5)*20,y:r.top+c.y*14.95+(Math.random()-0.5)*14};}
+const fEl=document.getElementById('petal-floor'),CW=18,MP=6,fc={};
+function gfc(x){const i=Math.floor(x/CW);if(!fc[i])fc[i]={rows:[],baseX:i*CW};return fc[i];}
+function mrs(){const n=1+Math.floor(Math.random()*4),s=[];for(let i=0;i<n;i++){const el=document.createElement('span');el.className='floor-petal';el.textContent=PC[Math.floor(Math.random()*PC.length)];el.style.cssText=`font-size:${8+Math.random()*8}px;color:hsl(${330+Math.random()*30},90%,${75+Math.random()*18}%);opacity:0.85;`;s.push(el);}return s;}
+function lp(x,color){const col=gfc(x);if(col.rows.length>=MP)return;const rEl=document.createElement('div');rEl.style.cssText='display:flex;align-items:flex-end;justify-content:center;line-height:1;';mrs(color).forEach(s=>rEl.appendChild(s));let cEl=fEl.querySelector(`[data-col="${Math.floor(x/CW)}"]`);if(!cEl){cEl=document.createElement('div');cEl.className='floor-col';cEl.dataset.col=Math.floor(x/CW);cEl.style.left=(col.baseX+(Math.random()-0.5)*CW*0.6)+'px';cEl.style.width=(CW+Math.floor(Math.random()*8))+'px';fEl.appendChild(cEl);}cEl.appendChild(rEl);col.rows.push({el:rEl,age:0});}
+setInterval(()=>{for(const i of Object.keys(fc)){const col=fc[i];if(!col.rows.length)continue;col.rows.forEach(r=>r.age++);const b=col.rows[0];if(b&&b.age>24){b.el.style.transition='opacity 3s ease-out';b.el.style.opacity='0';setTimeout(()=>b.el.remove(),3000);col.rows.shift();}}},8000);
+function sp(d){const el=document.createElement('span');el.className='petal';el.textContent=PC[Math.floor(Math.random()*PC.length)];function launch(o){if(o){el.style.left=o.x+'px';el.style.top=o.y+'px';}else{el.style.left=(Math.random()*window.innerWidth*0.18)+'px';el.style.top=(Math.random()*window.innerHeight*0.75)+'px';}const sx=parseFloat(el.style.left),dx=window.innerWidth*(0.55+Math.random()*0.55),dy=window.innerHeight*(0.05+Math.random()*0.6),rs=(Math.random()-0.5)*40,re=rs+(Math.random()-0.5)*200,dur=7000+Math.random()*12000,op=0.55+Math.random()*0.45,col=PCOLS[Math.floor(Math.random()*PCOLS.length)];el.style.setProperty('--drift-x',dx+'px');el.style.setProperty('--drift-y',dy+'px');el.style.setProperty('--rot-start',rs+'deg');el.style.setProperty('--rot-end',re+'deg');el.style.setProperty('--petal-opacity',op);el.style.animationDuration=dur+'ms';el.style.animationDelay=(d??0)+'ms';el.style.fontSize=(10+Math.random()*5)+'px';el.style.color=col;el.style.animationName='none';void el.offsetWidth;el.style.animationName='drift';el.addEventListener('animationend',()=>{if(dy>window.innerHeight*0.3&&Math.random()<0.35){const lx=sx+dx;if(lx>=0&&lx<=window.innerWidth)lp(lx,col);}el.style.animationDelay='0ms';setTimeout(()=>launch(bOrigin()),200+Math.random()*1800);},{once:true});}document.getElementById('bg-layer').appendChild(el);launch(bOrigin());}
+for(let i=0;i<PCOUNT;i++)sp(i<12?-(Math.random()*9000):Math.random()*6000);
+setTimeout(()=>{const r=treeEl.getBoundingClientRect(),cx=r.left+r.width*0.35,sw=r.width*1.1;for(let i=0;i<38;i++){const u1=Math.random(),u2=Math.random(),g=Math.sqrt(-2*Math.log(u1+0.0001))*Math.cos(2*Math.PI*u2),x=cx+g*(sw*0.3)+Math.random()*sw*0.25;if(x<0||x>window.innerWidth)continue;const col=gfc(x);if(col.rows.length>=3)continue;const color=PCOLS[Math.floor(Math.random()*PCOLS.length)];const rEl=document.createElement('div');rEl.style.cssText='display:flex;align-items:flex-end;justify-content:center;line-height:1;';mrs(color).forEach(s=>rEl.appendChild(s));let cEl=fEl.querySelector(`[data-col="${Math.floor(x/CW)}"]`);if(!cEl){cEl=document.createElement('div');cEl.className='floor-col';cEl.dataset.col=Math.floor(x/CW);cEl.style.left=(col.baseX+(Math.random()-0.5)*CW*0.6)+'px';cEl.style.width=(CW+Math.floor(Math.random()*8))+'px';fEl.appendChild(cEl);}cEl.appendChild(rEl);col.rows.push({el:rEl,age:Math.floor(Math.random()*8)});}},100);
+
+// ── keyboard nav ──────────────────────────────────────────────────
+const NAV={home:'/home',japan:'/jp',music:'/music',anime:'/anime',github:'/git',movies:'/movies',socials:'/'};
+const ML=Math.max(...Object.keys(NAV).map(k=>k.length));let nb='';
+document.addEventListener('keydown',e=>{if(e.metaKey||e.ctrlKey||e.altKey||e.key.length!==1)return;nb+=e.key.toLowerCase();if(nb.length>ML)nb=nb.slice(-ML);for(const[w,u]of Object.entries(NAV)){if(nb.endsWith(w)){window.location.href=u;return;}}});
+
+// ── boot ──────────────────────────────────────────────────────────
+loadRecent().catch(console.error);
+renderHeatmap(hmYear).catch(console.error);
+loadStats().catch(console.error);
+</script>
 </body>
 </html>
