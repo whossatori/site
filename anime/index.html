@@ -193,6 +193,50 @@
   .heatmap-tooltip.visible { opacity: 1; }
   .heatmap-tooltip strong { color: var(--text); font-family: 'Space Grotesk', sans-serif; }
 
+  /* day card — shown instead of the plain tooltip when a day has watch entries */
+  .heatmap-daycard {
+    position: fixed; z-index: 100;
+    background: var(--card); border: 1px solid var(--line-strong);
+    border-radius: 10px; padding: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+    opacity: 0; transition: opacity 0.12s;
+    pointer-events: none; width: 220px;
+    max-height: 280px; overflow-y: auto;
+  }
+  .heatmap-daycard.visible { opacity: 1; }
+  .heatmap-daycard::-webkit-scrollbar { width: 5px; }
+  .heatmap-daycard::-webkit-scrollbar-thumb { background: rgba(255,182,193,0.25); border-radius: 3px; }
+  .heatmap-daycard::-webkit-scrollbar-track { background: transparent; }
+
+  .daycard-date {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px; font-weight: 600; color: var(--text-dim);
+    margin-bottom: 8px; padding: 0 2px;
+  }
+  .daycard-row {
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 2px;
+  }
+  .daycard-row + .daycard-row { border-top: 1px solid var(--line); }
+  .daycard-cover {
+    width: 30px; height: 42px; border-radius: 4px;
+    object-fit: cover; background: #1a1a1e; flex-shrink: 0;
+  }
+  .daycard-cover-placeholder {
+    width: 30px; height: 42px; border-radius: 4px;
+    background: #1a1a1e; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-dimmer); font-size: 12px;
+  }
+  .daycard-info { flex: 1; min-width: 0; }
+  .daycard-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+  .daycard-ep { font-size: 10px; color: var(--text-dimmer); }
+
   .heatmap-footer {
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 8px;
@@ -267,38 +311,41 @@
   }
   .expanded-list::-webkit-scrollbar { width: 6px; }
   .expanded-list::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.12); border-radius: 3px;
+    background: rgba(255,182,193,0.25); border-radius: 3px;
+  }
+  .expanded-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,182,193,0.4);
   }
   .expanded-list::-webkit-scrollbar-track { background: transparent; }
 
   .expanded-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 12px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
     text-decoration: none; color: inherit; transition: background 0.15s;
   }
   .expanded-item:last-child { border-bottom: none; }
   .expanded-item:hover { background: rgba(255,255,255,0.03); }
 
   .expanded-cover {
-    width: 36px; height: 52px; border-radius: 4px;
+    width: 42px; height: 60px; border-radius: 5px;
     object-fit: cover; background: #1a1a1e; flex-shrink: 0;
   }
   .expanded-cover-placeholder {
-    width: 36px; height: 52px; border-radius: 4px;
+    width: 42px; height: 60px; border-radius: 5px;
     background: #1a1a1e; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    color: var(--text-dimmer); font-size: 14px;
+    color: var(--text-dimmer); font-size: 16px;
   }
   .expanded-info { flex: 1; min-width: 0; }
   .expanded-title {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 12px; font-weight: 600; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px;
   }
-  .expanded-meta { font-size: 11px; color: var(--text-dimmer); }
+  .expanded-meta { font-size: 12px; color: var(--text-dimmer); }
   .expanded-score {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 12px; font-weight: 700; color: var(--text-dim); flex-shrink: 0;
+    font-size: 13px; font-weight: 700; color: var(--text-dim); flex-shrink: 0;
   }
 
   /* ── shimmer loading ── */
@@ -353,6 +400,7 @@
 <div id="petal-floor"></div>
 <div class="blossom-tree" id="blossom-tree" aria-hidden="true"></div>
 <div class="heatmap-tooltip" id="heatmap-tooltip"></div>
+<div class="heatmap-daycard" id="heatmap-daycard"></div>
 
 <a class="back-link" href="/home">
   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
@@ -534,6 +582,7 @@ async function renderHeatmap(year) {
   const CELL = 11, GAP = 3;
   let colIndex = 0, col = null;
   const monthSeen = new Set();
+  const cellEntries = new Map(); // cell element -> entries array, for the hover daycard
 
   while (cur <= yearEnd) {
     if (cur.getDay() === 0) {
@@ -563,13 +612,13 @@ async function renderHeatmap(year) {
     cell.className = 'heatmap-cell';
 
     if (inYear) {
-      const key   = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth()+1).padStart(2,'0')}-${String(cur.getUTCDate()).padStart(2,'0')}`;
-      const count = dayMap[key] || 0;
+      const key     = `${cur.getUTCFullYear()}-${String(cur.getUTCMonth()+1).padStart(2,'0')}-${String(cur.getUTCDate()).padStart(2,'0')}`;
+      const entries = dayMap[key] || [];
+      const count   = entries.length;
       cell.dataset.level = levelFor(count);
       const label = cur.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-      cell.dataset.tip = count
-        ? `<strong>${count} activit${count===1?'y':'ies'}</strong> · ${label}`
-        : label;
+      cell.dataset.dateLabel = label;
+      if (count) cellEntries.set(cell, entries);
     } else {
       cell.style.opacity       = '0';
       cell.style.pointerEvents = 'none';
@@ -582,18 +631,55 @@ async function renderHeatmap(year) {
   // Set month row width to match grid
   monthRow.style.width = (colIndex * (CELL + GAP) - GAP) + 'px';
 
-  // Tooltip
+  // Tooltip + daycard
   const tooltip = document.getElementById('heatmap-tooltip');
+  const daycard = document.getElementById('heatmap-daycard');
+
+  function positionPopup(el, cellRect) {
+    el.style.left = (cellRect.left + cellRect.width/2 - el.offsetWidth/2) + 'px';
+    let top = cellRect.top - el.offsetHeight - 8;
+    if (top < 8) top = cellRect.bottom + 8; // flip below if it'd clip the top of the viewport
+    el.style.top = top + 'px';
+  }
+
   grid.addEventListener('mousemove', e => {
     const cell = e.target.closest('.heatmap-cell');
-    if (!cell?.dataset.tip) { tooltip.classList.remove('visible'); return; }
-    tooltip.innerHTML = cell.dataset.tip;
-    tooltip.classList.add('visible');
+    if (!cell || !cell.dataset.dateLabel) {
+      tooltip.classList.remove('visible');
+      daycard.classList.remove('visible');
+      return;
+    }
+
+    const entries = cellEntries.get(cell);
     const r = cell.getBoundingClientRect();
-    tooltip.style.left = (r.left + r.width/2 - tooltip.offsetWidth/2) + 'px';
-    tooltip.style.top  = (r.top - tooltip.offsetHeight - 8) + 'px';
+
+    if (entries && entries.length) {
+      tooltip.classList.remove('visible');
+      daycard.innerHTML = `
+        <div class="daycard-date">${cell.dataset.dateLabel}</div>
+        ${entries.map(en => `
+          <div class="daycard-row">
+            ${en.cover
+              ? `<img class="daycard-cover" src="${en.cover}" alt="" loading="lazy">`
+              : `<div class="daycard-cover-placeholder">▶</div>`}
+            <div class="daycard-info">
+              <div class="daycard-title">${en.title}</div>
+              <div class="daycard-ep">${en.episode}${en.episodes ? ` / ${en.episodes}` : ''}</div>
+            </div>
+          </div>`).join('')}`;
+      daycard.classList.add('visible');
+      positionPopup(daycard, r);
+    } else {
+      daycard.classList.remove('visible');
+      tooltip.innerHTML = cell.dataset.dateLabel;
+      tooltip.classList.add('visible');
+      positionPopup(tooltip, r);
+    }
   });
-  grid.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+  grid.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+    daycard.classList.remove('visible');
+  });
 
   hmLoading = false;
 }
@@ -603,8 +689,8 @@ document.getElementById('year-next').addEventListener('click', () => { hmYear++;
 
 // ── stats: completed + genres ─────────────────────────────────────
 function coverHTML(cover, title, portrait) {
-  const w = portrait ? 36 : 32, h = portrait ? 52 : 32;
-  const r = portrait ? 4 : 6;
+  const w = portrait ? 42 : 32, h = portrait ? 60 : 32;
+  const r = portrait ? 5 : 6;
   if (cover) return `<img class="expanded-cover" src="${cover}" alt="${title}" loading="lazy" style="width:${w}px;height:${h}px;border-radius:${r}px">`;
   return `<div class="expanded-cover-placeholder" style="width:${w}px;height:${h}px;border-radius:${r}px">▶</div>`;
 }
