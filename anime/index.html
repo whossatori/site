@@ -260,7 +260,16 @@
   }
   .stat-bar-item.open .stat-bar-expanded { display: block; }
 
-  .expanded-list { display: flex; flex-direction: column; }
+  .expanded-list {
+    display: flex; flex-direction: column;
+    max-height: 660px; overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .expanded-list::-webkit-scrollbar { width: 6px; }
+  .expanded-list::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.12); border-radius: 3px;
+  }
+  .expanded-list::-webkit-scrollbar-track { background: transparent; }
 
   .expanded-item {
     display: flex; align-items: center; gap: 10px;
