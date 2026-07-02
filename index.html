@@ -96,6 +96,19 @@
     font-family: 'Space Grotesk', sans-serif;
     font-weight: 600; font-size: 22px;
     letter-spacing: 0.01em; margin: 0 0 22px;
+    /* base colour — overridden by paint JS */
+    color: var(--text);
+    display: inline-block;
+    /* ensure paint image covers the text correctly */
+    position: relative;
+  }
+
+  /* paint applied via JS — background-clip: text technique */
+  .name.paint-active {
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
   }
 
   .links {
@@ -168,7 +181,7 @@
           <div class="avatar" id="avatar"><img id="avatar-img" src="" alt=""></div>
         </a>
       </div>
-      <h1 class="name">satori</h1>
+      <h1 class="name" id="name">satori</h1>
 
       <div class="links">
         <a class="link-item" id="link-twitch" href="#" target="_blank" rel="noopener">
@@ -215,34 +228,108 @@
 <script>
   const API = 'https://api.satos.cc';
 
+  // ── webp animated support detection ───────────────────────────
+  // Resolves true if the browser can play animated webp
+  function supportsAnimatedWebp() {
+    return new Promise(resolve => {
+      const img = new Image();
+      // Tiny 2-frame animated webp (base64)
+      img.onload  = () => resolve(img.width === 2);
+      img.onerror = () => resolve(false);
+      img.src = 'data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoCAAEAAkA4JZACdAEO/gHOAAD++P7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4A';
+    });
+  }
+
+  // ── Build CSS background from paint layer ─────────────────────
+  function layerToBackground(layer, canWebp) {
+    if (layer.type === 'color') {
+      return layer.color;
+    }
+
+    if (layer.type === 'linear-gradient') {
+      const fn   = layer.repeating ? 'repeating-linear-gradient' : 'linear-gradient';
+      const stops = layer.stops.map(s => `${s.color} ${(s.at * 100).toFixed(1)}%`).join(', ');
+      return `${fn}(${layer.angle}deg, ${stops})`;
+    }
+
+    if (layer.type === 'radial-gradient') {
+      const fn    = layer.repeating ? 'repeating-radial-gradient' : 'radial-gradient';
+      const stops = layer.stops.map(s => `${s.color} ${(s.at * 100).toFixed(1)}%`).join(', ');
+      return `${fn}(${layer.shape || 'ellipse'} at center, ${stops})`;
+    }
+
+    if (layer.type === 'image') {
+      // Pick best format the browser supports
+      // animated webp → animated avif isn't detectable the same way,
+      // so we fall back to gif if webp isn't supported
+      const url = canWebp ? layer.animated : layer.static;
+      return `url("${url}")`;
+    }
+
+    return null;
+  }
+
+  // ── Apply paint to the name element ──────────────────────────
+  async function applyPaint(paint, canWebp) {
+    const el = document.getElementById('name');
+    if (!paint || !paint.layers?.length) return;
+
+    // Build background layers (CSS stacks last-declared on top,
+    // but 7TV stacks first layer on top — so we reverse)
+    const backgrounds = [...paint.layers]
+      .reverse()
+      .map(l => layerToBackground(l, canWebp))
+      .filter(Boolean);
+
+    if (!backgrounds.length) return;
+
+    // CSS text-shadow from paint shadows
+    const shadows = (paint.shadows || [])
+      .map(s => `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.color}`)
+      .join(', ');
+
+    // Apply
+    el.style.backgroundImage = backgrounds.join(', ');
+    el.style.backgroundSize  = 'cover';
+    el.style.backgroundPosition = 'center';
+    if (shadows) el.style.textShadow = shadows;
+
+    el.classList.add('paint-active');
+  }
+
+  // ── Load paint from API ───────────────────────────────────────
+  async function loadPaint() {
+    try {
+      const [paintRes, canWebp] = await Promise.all([
+        fetch(`${API}/paint`),
+        supportsAnimatedWebp(),
+      ]);
+      if (!paintRes.ok) return;
+      const paint = await paintRes.json();
+      await applyPaint(paint, canWebp);
+    } catch {
+      // Paint failing silently is fine — name stays plain white
+    }
+  }
+
   // ── load config from API ──────────────────────────────────────
   async function loadConfig() {
     try {
       const res = await fetch(`${API}/config`);
       const cfg = await res.json();
 
-      // Avatar
-      const avatarImg = document.getElementById('avatar-img');
-      avatarImg.src = cfg.avatar_url;
-
-      // Favicon
-      document.getElementById('favicon').href = cfg.favicon_url;
-
-      // Social links
+      document.getElementById('avatar-img').src   = cfg.avatar_url;
+      document.getElementById('favicon').href     = cfg.favicon_url;
       document.getElementById('link-twitch').href  = cfg.link_twitch  || '#';
       document.getElementById('link-twitter').href = cfg.link_twitter || '#';
       document.getElementById('link-tiktok').href  = cfg.link_tiktok  || '#';
       document.getElementById('link-throne').href  = cfg.link_throne  || '#';
       document.getElementById('link-tips').href    = cfg.link_tips    || '#';
 
-      // Discord link
       const discordWidget = document.getElementById('discord-widget');
       discordWidget.href = cfg.link_discord || '#';
-
-      // Update Discord invite for widget fetch
       window._discordInvite = cfg.link_discord || 'https://discord.gg/KNcRAUFhv3';
-    } catch (e) {
-      // Fallback to defaults if API is down
+    } catch {
       document.getElementById('avatar-img').src = 'https://segs.lol/IEPPV1.png';
       window._discordInvite = 'https://discord.gg/KNcRAUFhv3';
     } finally {
@@ -250,7 +337,9 @@
     }
   }
 
+  // Boot — load config, paint, and discord in parallel
   loadConfig().then(() => loadDiscordWidget());
+  loadPaint();
 
   // ── card tilt ─────────────────────────────────────────────────
   const card  = document.getElementById('card');
