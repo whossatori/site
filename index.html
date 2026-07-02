@@ -300,12 +300,19 @@
   // This guarantees the mask matches the real font/weight/size exactly,
   // so the paint only shows through the actual letter shapes — nothing
   // outside them.
+  // Fixed supersampling factor for the mask canvas, independent of the
+  // screen's devicePixelRatio. The rendered text box is tiny (~90×28px),
+  // so even on a 1x display a low-res raster mask shows visibly soft/
+  // blocky edges once the browser composites it — oversampling well
+  // beyond the screen's own pixel density keeps the letter edges crisp.
+  const MASK_SUPERSAMPLE = 4;
+
   function buildTextMaskDataUrl(el) {
     try {
       const rect = el.getBoundingClientRect();
       const w = Math.max(1, Math.ceil(rect.width));
       const h = Math.max(1, Math.ceil(rect.height));
-      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const dpr = Math.min((window.devicePixelRatio || 1) * MASK_SUPERSAMPLE, 12);
 
       const canvas = document.createElement('canvas');
       canvas.width  = w * dpr;
@@ -313,6 +320,7 @@
 
       const ctx = canvas.getContext('2d');
       ctx.scale(dpr, dpr);
+      ctx.textRendering = 'optimizeLegibility';
 
       const cs = getComputedStyle(el);
       ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
@@ -330,6 +338,19 @@
     }
   }
 
+  // Build a CSS filter chain of drop-shadow()s from the paint's shadow
+  // list. drop-shadow is used instead of text-shadow because it shadows
+  // the element's actual rendered/masked pixels, not the native glyph
+  // outline — the two don't perfectly line up at this size, and using
+  // text-shadow on top of a masked image created a soft double-edge that
+  // read as "blurry".
+  function shadowsToFilter(shadows) {
+    if (!shadows?.length) return '';
+    return shadows
+      .map(s => `drop-shadow(${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.color})`)
+      .join(' ');
+  }
+
   // ── Apply paint to the name element ──────────────────────────
   let lastPaint = null, lastCanWebp = false;
 
@@ -337,9 +358,7 @@
     const el = document.getElementById('name');
     if (!paint || !paint.layers?.length) return;
 
-    const shadows = (paint.shadows || [])
-      .map(s => `${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.color}`)
-      .join(', ');
+    const filter = shadowsToFilter(paint.shadows);
 
     const { backgroundImage, backgroundSize, hasImage } = layersToCss(paint.layers, canWebp);
     if (!backgroundImage) return;
@@ -347,6 +366,7 @@
     el.classList.remove('paint-active', 'paint-masked');
     el.style.webkitMaskImage = '';
     el.style.maskImage = '';
+    el.style.textShadow = '';
 
     let maskUrl = null;
     if (hasImage) {
@@ -377,7 +397,7 @@
       el.classList.add('paint-active');
     }
 
-    if (shadows) el.style.textShadow = shadows;
+    el.style.filter = filter;
   }
 
   function debounce(fn, wait) {
