@@ -60,7 +60,6 @@
     border-radius: 22px;
     padding: 36px 28px 28px;
     text-align: center;
-    will-change: transform;
     transition: transform 0.15s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
     box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset, 0 0 26px -6px var(--glow), 0 20px 60px -20px rgba(0,0,0,0.8);
   }
@@ -370,11 +369,15 @@
     card.style.transform = `rotateX(${-dy*maxTilt}deg) rotateY(${dx*maxTilt}deg) translateY(${maxLift}px) scale(1.008)`;
   }
   function resetTilt() {
-    card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
+    card.style.transform  = '';
+    card.style.willChange = '';
     card.classList.remove('hovered');
   }
   stage.addEventListener('mousemove', handleMove);
-  stage.addEventListener('mouseenter', () => card.classList.add('hovered'));
+  stage.addEventListener('mouseenter', () => {
+    card.classList.add('hovered');
+    card.style.willChange = 'transform';
+  });
   stage.addEventListener('mouseleave', resetTilt);
   if (window.matchMedia('(hover: none)').matches) stage.removeEventListener('mousemove', handleMove);
 

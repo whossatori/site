@@ -147,8 +147,6 @@
     padding: 36px 28px 28px;
     height: 357px;
     text-align: center;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
     transition: transform 0.15s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
     box-shadow:
       0 0 0 1px rgba(255,255,255,0.02) inset,
@@ -164,7 +162,7 @@
       0 25px 70px -20px rgba(0,0,0,0.9);
   }
 
-  .card-inner { transform: translateZ(20px); backface-visibility: hidden; }
+  .card-inner { }
 
   .back-link {
     display: inline-flex;
@@ -462,9 +460,13 @@ stage.addEventListener('mousemove', (e) => {
   const dy = ((e.clientY - rect.top)  / rect.height - 0.5) * 2;
   card.style.transform = `rotateX(${-dy*6}deg) rotateY(${dx*6}deg) translateY(-6px) scale(1.008)`;
 });
-stage.addEventListener('mouseenter', () => card.classList.add('hovered'));
+stage.addEventListener('mouseenter', () => {
+  card.classList.add('hovered');
+  card.style.willChange = 'transform';
+});
 stage.addEventListener('mouseleave', () => {
-  card.style.transform = 'rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)';
+  card.style.transform = '';
+  card.style.willChange = '';
   card.classList.remove('hovered');
 });
 
@@ -1008,3 +1010,4 @@ setTimeout(seedFloorPetals, 100);
 
 </body>
 </html>
+
