@@ -351,9 +351,9 @@
     // Initial fetch
     await pollPaint();
 
-    // Poll every 5 seconds — matches server cache TTL so changes
-    // surface within ~5–10 seconds of a 7TV paint switch.
-    _paintPollTimer = setInterval(pollPaint, 5000);
+    // Poll every second — server cache TTL is 5s so the paint will
+    // update within ~1–6 seconds of a 7TV switch. ~60 req/min total.
+    _paintPollTimer = setInterval(pollPaint, 1000);
   }
 
   // Stop polling when the tab is hidden, resume when visible again
