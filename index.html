@@ -97,6 +97,8 @@
     color: var(--text);
     display: inline-block;
     transform: translateZ(0);
+    /* Smooth transition when paint changes */
+    transition: opacity 0.25s ease-out;
   }
 
   .name.paint-active {
@@ -104,6 +106,11 @@
     background-clip: text;
     -webkit-text-fill-color: transparent;
     color: transparent;
+  }
+
+  /* Brief flash when paint updates */
+  .name.paint-updating {
+    opacity: 0;
   }
 
   .links {
@@ -224,57 +231,34 @@
   const API = 'https://api.satos.cc';
 
   // ── webp animated support detection ───────────────────────────
-  // Resolves true if the browser can play animated webp
   function supportsAnimatedWebp() {
     return new Promise(resolve => {
       const img = new Image();
-      // Tiny 2-frame animated webp (base64)
       img.onload  = () => resolve(img.width === 2);
       img.onerror = () => resolve(false);
       img.src = 'data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoCAAEAAkA4JZACdAEO/gHOAAD++P7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v7+/v4A';
     });
   }
 
-  // ── Build CSS background from paint layer ─────────────────────
-  function layerToBackground(layer, canWebp) {
-    if (layer.type === 'color') {
-      return layer.color;
-    }
-
-    if (layer.type === 'linear-gradient') {
-      const fn   = layer.repeating ? 'repeating-linear-gradient' : 'linear-gradient';
-      const stops = layer.stops.map(s => `${s.color} ${(s.at * 100).toFixed(1)}%`).join(', ');
-      return `${fn}(${layer.angle}deg, ${stops})`;
-    }
-
-    if (layer.type === 'radial-gradient') {
-      const fn    = layer.repeating ? 'repeating-radial-gradient' : 'radial-gradient';
-      const stops = layer.stops.map(s => `${s.color} ${(s.at * 100).toFixed(1)}%`).join(', ');
-      return `${fn}(${layer.shape || 'ellipse'} at center, ${stops})`;
-    }
-
-    if (layer.type === 'image') {
-      // Pick best format the browser supports
-      // animated webp → animated avif isn't detectable the same way,
-      // so we fall back to gif if webp isn't supported
-      const url = canWebp ? layer.animated : layer.static;
-      return `url("${url}")`;
-    }
-
-    return null;
-  }
-
   // ── Apply paint to the name element ──────────────────────────
   async function applyPaint(paint, canWebp) {
     const el = document.getElementById('name');
-    if (!paint || !paint.layers?.length) return;
+    if (!paint || !paint.layers?.length) {
+      // Clear any existing paint
+      el.style.backgroundImage    = '';
+      el.style.backgroundSize     = '';
+      el.style.backgroundPosition = '';
+      el.style.backgroundRepeat   = '';
+      el.style.backgroundColor    = '';
+      el.style.filter             = '';
+      el.classList.remove('paint-active');
+      return;
+    }
 
-    // Shadows via filter drop-shadow (same as susgee.dev)
     const filterShadows = (paint.shadows || [])
       .map(s => `drop-shadow(${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.color})`)
       .join(' ');
 
-    // Build background layers
     const bgParts   = [];
     const sizeParts = [];
 
@@ -308,25 +292,80 @@
     el.style.backgroundSize     = sizeParts.join(', ');
     el.style.backgroundPosition = 'center';
     el.style.backgroundRepeat   = 'no-repeat';
-    el.style.backgroundColor    = '#bfbfbf'; // fallback, same as susgee.dev
-    if (filterShadows) el.style.filter = filterShadows;
+    el.style.backgroundColor    = '#bfbfbf';
+    el.style.filter             = filterShadows || '';
     el.classList.add('paint-active');
   }
 
-  // ── Load paint from API ───────────────────────────────────────
-  async function loadPaint() {
+  // ── Paint polling — syncs with server's 5s cache TTL ─────────
+  // Tracks the last known paint id so we only re-render on actual changes.
+  let _currentPaintId  = null;
+  let _canWebp         = false;
+  let _paintPollTimer  = null;
+
+  async function pollPaint() {
     try {
-      const [paintRes, canWebp] = await Promise.all([
-        fetch(`${API}/paint`),
-        supportsAnimatedWebp(),
-      ]);
-      if (!paintRes.ok) return;
-      const paint = await paintRes.json();
-      await applyPaint(paint, canWebp);
+      const res = await fetch(`${API}/paint`, { cache: 'no-store' });
+
+      // Paint removed / no active paint
+      if (res.status === 404) {
+        if (_currentPaintId !== null) {
+          _currentPaintId = null;
+          const el = document.getElementById('name');
+          el.classList.add('paint-updating');
+          await new Promise(r => setTimeout(r, 150));
+          el.style.backgroundImage = '';
+          el.style.backgroundSize  = '';
+          el.style.backgroundColor = '';
+          el.style.filter          = '';
+          el.classList.remove('paint-active');
+          el.classList.remove('paint-updating');
+        }
+        return;
+      }
+
+      if (!res.ok) return;
+      const paint = await res.json();
+
+      // No change — skip re-render
+      if (paint.id === _currentPaintId) return;
+
+      _currentPaintId = paint.id;
+
+      // Brief fade-out so the swap isn't jarring
+      const el = document.getElementById('name');
+      el.classList.add('paint-updating');
+      await new Promise(r => setTimeout(r, 150));
+      await applyPaint(paint, _canWebp);
+      el.classList.remove('paint-updating');
+
     } catch {
-      // Paint failing silently is fine — name stays plain white
+      // Network blip — silently skip, retry next interval
     }
   }
+
+  async function loadPaint() {
+    // Resolve webp support once, reuse for all polls
+    _canWebp = await supportsAnimatedWebp();
+
+    // Initial fetch
+    await pollPaint();
+
+    // Poll every 5 seconds — matches server cache TTL so changes
+    // surface within ~5–10 seconds of a 7TV paint switch.
+    _paintPollTimer = setInterval(pollPaint, 5000);
+  }
+
+  // Stop polling when the tab is hidden, resume when visible again
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      clearInterval(_paintPollTimer);
+      _paintPollTimer = null;
+    } else if (!_paintPollTimer) {
+      pollPaint(); // catch up immediately
+      _paintPollTimer = setInterval(pollPaint, 5000);
+    }
+  });
 
   // ── load config from API ──────────────────────────────────────
   async function loadConfig() {
@@ -353,7 +392,7 @@
     }
   }
 
-  // Boot — load config, paint, and discord in parallel
+  // Boot
   loadConfig().then(() => loadDiscordWidget());
   loadPaint();
 
