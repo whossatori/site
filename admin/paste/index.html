@@ -3,24 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>satori / admin / haste</title>
-  <link rel="stylesheet" href="/admin/haste.css">
-  <script src="/admin/haste.js" defer></script>
+  <title>Haste · satori</title>
+  <link rel="preload" href="/assets/haste/snow.webp" as="image">
+  <link rel="stylesheet" href="/assets/haste/editor.css">
+  <script src="/assets/haste/editor.js" defer></script>
 </head>
 <body>
-  <main hidden>
-    <nav aria-label="Haste admin"><a href="/admin/">← Admin</a><a href="/admin/pastes/">Manage pastes</a></nav>
-    <h1>New paste</h1>
-    <form id="paste-form">
-      <label for="paste-text">Text</label>
-      <textarea id="paste-text" required spellcheck="false" rows="14"></textarea>
-      <button type="submit">Publish paste</button>
-    </form>
-    <div class="result" id="paste-result" hidden>
-      <a id="paste-link" class="paste-link" target="_blank" rel="noopener"></a>
-      <button id="copy-link" type="button">Copy link</button>
-    </div>
-    <p id="status" class="status" role="status"></p>
+  <main class="workspace">
+    <header class="toolbar">
+      <h1>Haste</h1>
+      <div class="commands" role="group" aria-label="Paste actions">
+        <button id="save" type="button" aria-keyshortcuts="Control+S Meta+S" title="Save (Ctrl+S)" disabled>Save <kbd>Ctrl S</kbd></button>
+        <button id="new" type="button" aria-keyshortcuts="Alt+N" title="New paste (Alt+N)">New <kbd>Alt N</kbd></button>
+        <button id="raw" type="button" aria-keyshortcuts="Alt+R" title="View raw text (Alt+R)" disabled>Raw <kbd>Alt R</kbd></button>
+        <button id="edit" type="button" aria-keyshortcuts="Alt+Shift+E" title="Edit a copy (Alt+Shift+E)" disabled>Edit <kbd>Alt Shift E</kbd></button>
+      </div>
+    </header>
+    <section class="surface" id="surface" aria-label="Paste">
+      <textarea id="paste-text" aria-label="Paste text" placeholder="Paste, type, or drop a text file" spellcheck="false" autocomplete="off" hidden></textarea>
+      <pre id="paste-view" aria-label="Paste contents" tabindex="0" hidden></pre>
+    </section>
+    <footer class="footer">
+      <div class="details">
+        <button id="open-file" type="button" hidden>Open text file</button>
+        <input id="file" type="file" hidden>
+        <button id="copy-link" type="button" hidden>Copy link</button>
+        <p id="status" role="status"></p>
+      </div>
+      <a id="manage" href="/admin/pastes/" hidden>Manage pastes</a>
+    </footer>
   </main>
+  <noscript>Enable JavaScript to open the editor.</noscript>
 </body>
 </html>

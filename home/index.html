@@ -542,6 +542,9 @@ const loginBtn     = document.getElementById('login-btn');
 const loginError   = document.getElementById('login-error');
 const deleteId     = new URLSearchParams(window.location.search).get('delete') ?? '';
 const deleteReturn = /^[A-Za-z0-9]{3}$/.test(deleteId) ? '/i/del/' + deleteId : null;
+const pasteId      = new URLSearchParams(window.location.search).get('paste') ?? '';
+const pasteReturn  = /^[A-Za-z0-9]{3}$/.test(pasteId) ? '/admin/paste/?edit=' + pasteId : null;
+const adminReturn  = deleteReturn ?? (pasteId === 'create' ? '/admin/paste/' : pasteReturn);
 
 function openLogin() {
   loginOverlay.classList.add('active');
@@ -553,7 +556,7 @@ function closeLogin() {
   loginOverlay.classList.remove('active');
 }
 
-if (deleteReturn) openLogin();
+if (adminReturn) openLogin();
 
 loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) closeLogin(); });
 document.addEventListener('keydown', (e) => {
@@ -582,7 +585,7 @@ async function doLogin() {
     if (!res.ok) throw new Error(data.error ?? 'Invalid credentials');
     localStorage.setItem('admin_token', data.token);
     closeLogin();
-    window.location.href = deleteReturn ?? '/admin';
+    window.location.href = adminReturn ?? '/admin';
   } catch (e) {
     loginError.textContent = e.message;
     loginBtn.disabled = false;

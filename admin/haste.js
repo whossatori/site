@@ -32,35 +32,6 @@
     }
   }
 
-  const form = document.getElementById('paste-form');
-  if (form) {
-    const input = document.getElementById('paste-text');
-    const submit = form.querySelector('button');
-    const result = document.getElementById('paste-result');
-    const link = document.getElementById('paste-link');
-    document.getElementById('copy-link').addEventListener('click', () => copyLink(link.href));
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      submit.disabled = true;
-      status.textContent = 'Publishing…';
-      try {
-        const paste = await request('', {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-          body: input.value,
-        });
-        link.href = link.textContent = paste.link;
-        result.hidden = false;
-        status.textContent = 'Paste published.';
-      } catch (error) {
-        status.textContent = error.message;
-      } finally {
-        submit.disabled = false;
-      }
-    });
-    return;
-  }
-
   const list = document.getElementById('paste-list');
   const template = document.getElementById('paste-row');
   const date = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
