@@ -65,12 +65,13 @@ button:disabled { opacity: .52; cursor: default; }
 :where(button, a):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 kbd { margin-left: 3px; color: var(--muted); font: .75em ui-monospace, monospace; white-space: nowrap; }
 .panes {
+  --pane-gap: 8px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: minmax(200px, 1fr);
   overflow: auto;
   padding: 4px;
-  gap: 8px;
+  gap: var(--pane-gap);
 }
 .pane {
   min-width: 0;
@@ -81,18 +82,26 @@ kbd { margin-left: 3px; color: var(--muted); font: .75em ui-monospace, monospace
   overflow: hidden;
 }
 .panes > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+.panes > :only-child { min-height: var(--layout-min-height, 200px); }
 .split-group {
+  --split-position: 50%;
+  --first-track: calc(var(--split-position) - var(--pane-gap) / 2);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, var(--first-track)) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
-  gap: 8px;
+  gap: var(--pane-gap);
 }
 .split-group.stacked {
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-rows: minmax(0, var(--first-track)) minmax(0, 1fr);
 }
+.panes[data-resize-axis="columns"] :is(.pane, .split-group, textarea, pre),
+.panes[data-resize-axis="columns"] { cursor: col-resize; }
+.panes[data-resize-axis="rows"] :is(.pane, .split-group, textarea, pre),
+.panes[data-resize-axis="rows"] { cursor: row-resize; }
+.panes[data-resizing] { user-select: none; }
 .pane.opening { position: relative; z-index: 1; }
 .pane:focus-within, .pane.dragging {
   border-color: var(--focus);
@@ -148,7 +157,7 @@ dialog p { margin: 0 0 5px; }
   .panes { grid-template-columns: minmax(0, 1fr); }
   .split-group {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, var(--first-track)) minmax(0, 1fr);
   }
   kbd { display: none; }
 }
