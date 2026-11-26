@@ -12,7 +12,7 @@ body {
   isolation: isolate;
   background: #0b2530;
   color: var(--text);
-  font: 14px/1.45 system-ui, sans-serif;
+  font: 14px/1.45 "Cascadia Mono", Consolas, ui-monospace, monospace;
 }
 body::before {
   content: "";
@@ -23,72 +23,74 @@ body::before {
     url("/assets/haste/snow.webp") center 58% / cover no-repeat;
 }
 .workspace {
-  width: min(1320px, 100%);
   height: 100vh;
   height: 100dvh;
-  margin: auto;
-  padding: clamp(12px, 3.4vw, 46px);
+  padding: clamp(6px, .65vw, 12px);
   display: grid;
-  grid-template-rows: auto minmax(200px, 1fr) auto;
-  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 4px;
 }
-.toolbar, .commands, .footer, .details { display: flex; align-items: center; }
-.toolbar, .footer { justify-content: space-between; gap: 14px; }
-h1 { font-size: 21px; font-weight: 600; letter-spacing: .01em; margin: 0; }
-.commands { flex-wrap: wrap; gap: 6px; }
-button {
+.commands { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; padding: 0 4px; }
+button, .command {
   font: inherit;
   color: inherit;
   background: rgba(6, 28, 37, .66);
   border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 7px 10px;
+  border-radius: 4px;
+  padding: 5px 9px;
+  text-decoration: none;
   cursor: pointer;
 }
-button:hover:not(:disabled) { background: #173e4d; }
+button:hover:not(:disabled), .command:hover { background: #173e4d; }
 button:disabled { opacity: .52; cursor: default; }
-:where(button, a, pre):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+:where(button, a):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 kbd { margin-left: 3px; color: var(--muted); font: .75em ui-monospace, monospace; white-space: nowrap; }
-.surface {
-  position: relative;
+.panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(200px, 1fr);
+  overflow: auto;
+  padding: 4px;
+  gap: 8px;
+}
+.pane {
   min-width: 0;
   min-height: 0;
   background: rgba(4, 20, 27, .72);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 0 20px 70px rgba(4, 16, 22, .27);
 }
-.surface:focus-within, .surface.dragging { border-color: var(--focus); }
-.surface :is(textarea, pre) {
+.pane:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.pane:focus-within, .pane.dragging {
+  border-color: var(--focus);
+  box-shadow: 0 0 8px rgba(102, 206, 242, .5), inset 0 0 8px rgba(102, 206, 242, .14);
+}
+.pane :is(textarea, pre) {
   display: block;
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: clamp(14px, 2.2vw, 28px);
+  padding: 10px 12px;
   overflow: auto;
   border: 0;
   outline: none;
   resize: none;
   background: transparent;
   color: var(--text);
-  font: 14px/1.65 "Cascadia Code", Consolas, ui-monospace, monospace;
+  caret-color: var(--focus);
+  font: inherit;
+  line-height: 1.65;
   tab-size: 4;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.surface textarea::placeholder { color: var(--muted); }
-.footer { color: var(--muted); min-height: 32px; flex-wrap: wrap; }
-.details { gap: 10px; min-width: 0; flex-wrap: wrap; }
-.details button { padding: 4px 8px; }
-.footer p { margin: 0; overflow-wrap: anywhere; }
-a { color: inherit; text-underline-offset: 3px; }
+#status { margin: 0 4px; color: var(--muted); overflow-wrap: anywhere; }
+#status:empty { display: none; }
 [hidden] { display: none !important; }
 
 @media (max-width: 700px) {
   body::before { background-position: center, 60% 58%; }
+  .panes { grid-template-columns: minmax(0, 1fr); }
   kbd { display: none; }
-}
-@media (max-width: 350px) {
-  .toolbar { align-items: flex-start; flex-direction: column; gap: 8px; }
 }

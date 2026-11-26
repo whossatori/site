@@ -3,73 +3,155 @@
   const adminApi = 'https://api.satos.cc/admin/haste';
   const previewBytes = 2 * 1024 * 1024;
   const maxBytes = 250 * 1024 * 1024;
-  const validId = /^[A-Za-z0-9]{3}$/;
+  const separator = '\n\n---\n\n';
+  const idPattern = /^[A-Za-z0-9]{3}$/;
   const viewId = location.pathname.match(/^\/h\/([A-Za-z0-9]{3})\/?$/)?.[1];
   const editQuery = new URLSearchParams(location.search).get('edit') ?? '';
-  const editId = validId.test(editQuery) ? editQuery : null;
-  const token = localStorage.getItem('admin_token');
-  const signIn = () => location.replace('/home/?paste=' + (editId ?? 'create'));
+  const editId = idPattern.test(editQuery) ? editQuery : null;
+  const token = viewId ? null : localStorage.getItem('admin_token');
   if (!viewId && !token) {
-    signIn();
+    location.replace('/home/?paste=' + (editId ?? 'create'));
     return;
   }
 
-  const input = document.getElementById('paste-text');
-  const view = document.getElementById('paste-view');
-  const surface = document.getElementById('surface');
+  const panes = document.getElementById('panes');
   const status = document.getElementById('status');
   const save = document.getElementById('save');
   const create = document.getElementById('new');
+  const split = document.getElementById('split');
   const raw = document.getElementById('raw');
-  const edit = document.getElementById('edit');
-  const openFile = document.getElementById('open-file');
-  const filePicker = document.getElementById('file');
-  const copy = document.getElementById('copy-link');
-  const manage = document.getElementById('manage');
-  let attached = null;
+  const drafts = [];
   let busy = false;
 
-  function updateEditor() {
-    input.readOnly = busy || attached?.size > previewBytes && !input.value;
-    openFile.disabled = busy;
-    save.disabled = Boolean(viewId || busy || !attached && !input.value);
+  const rawUrl = id => '/h/r/' + id;
+
+  function hasDraft() {
+    return drafts.some(pane => pane.attached?.size || pane.input.value);
   }
 
-  const rawUrl = id => '/h/r/' + id;
+  function updateEditor() {
+    save.disabled = busy || drafts.some(pane => pane.loading) || !hasDraft();
+    split.disabled = create.disabled = busy;
+    for (const { input, attached, loading } of drafts) {
+      input.readOnly = busy || loading || Boolean(attached?.size > previewBytes && !input.value);
+    }
+  }
+
+  function mountPane(text, editable) {
+    const pane = document.createElement('div');
+    const field = document.createElement(editable ? 'textarea' : 'pre');
+    pane.className = 'pane';
+    field.setAttribute('aria-label', 'Paste pane ' + (panes.childElementCount + 1));
+    if (editable) {
+      field.value = text;
+      field.spellcheck = false;
+      field.autocomplete = 'off';
+    } else {
+      field.textContent = text;
+      field.tabIndex = 0;
+    }
+    pane.append(field);
+    panes.append(pane);
+    return { pane, field };
+  }
+
+  function addDraft(text = '', attached = null) {
+    const { pane, field: input } = mountPane(text, true);
+    const draft = { input, attached, loading: false };
+    drafts.push(draft);
+    input.addEventListener('input', () => {
+      draft.attached = null;
+      status.textContent = '';
+      updateEditor();
+    });
+    pane.addEventListener('dragover', event => {
+      if (!event.dataTransfer?.types.includes('Files')) return;
+      event.preventDefault();
+      pane.classList.add('dragging');
+    });
+    pane.addEventListener('dragleave', () => pane.classList.remove('dragging'));
+    pane.addEventListener('drop', event => {
+      pane.classList.remove('dragging');
+      if (!event.dataTransfer?.types.includes('Files')) return;
+      event.preventDefault();
+      if (event.dataTransfer.files.length === 1) attach(draft, event.dataTransfer.files[0]);
+      else status.textContent = 'Drop one text file per pane.';
+    });
+    updateEditor();
+    return input;
+  }
+
+  async function attach(draft, file) {
+    if (busy || draft.loading) return;
+    if (!file.size || file.size > maxBytes) {
+      status.textContent = file.size ? 'Text files can be up to 250 MiB.' : 'The file is empty.';
+      return;
+    }
+    draft.loading = true;
+    updateEditor();
+    try {
+      const large = file.size > previewBytes;
+      const text = large ? '' : new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+      if (text.includes('\0')) throw new Error('Binary file');
+      draft.input.value = text;
+      draft.attached = file;
+      status.textContent = large ? file.name + ' is attached. Save to upload it.' : file.name;
+    } catch {
+      status.textContent = 'Choose a UTF-8 text file.';
+    } finally {
+      draft.loading = false;
+      updateEditor();
+      draft.input.focus();
+    }
+  }
+
   async function fetchPaste(id) {
     const response = await fetch(rawUrl(id));
     if (!response.ok) throw new Error(response.status === 404 ? 'Paste not found.' : 'Could not load the paste.');
     return response;
   }
 
-  async function readPreview(response) {
+  async function previewOf(response) {
     const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let text = '';
+    const chunks = [];
     let remaining = previewBytes;
     for (;;) {
       const { done, value } = await reader.read();
-      if (done) return { text: text + decoder.decode(), truncated: false };
+      if (done) return { blob: new Blob(chunks), truncated: false };
       if (value.length > remaining) {
-        text += decoder.decode(value.subarray(0, remaining), { stream: true });
+        chunks.push(value.subarray(0, remaining));
         await reader.cancel();
-        return { text, truncated: true };
+        return { blob: new Blob(chunks), truncated: true };
       }
-      text += decoder.decode(value, { stream: true });
+      chunks.push(value);
       remaining -= value.length;
     }
   }
 
+  function slicePanes(blob, layout) {
+    if (!layout) return [blob];
+    const panesInFile = [];
+    let offset = 0;
+    for (const length of layout.split(',').map(Number)) {
+      if (offset > blob.size || (offset === blob.size && length)) break;
+      panesInFile.push(blob.slice(offset, offset + length));
+      offset += length + separator.length;
+    }
+    return panesInFile;
+  }
+
   async function openViewer() {
-    view.hidden = false;
-    raw.disabled = edit.disabled = false;
-    copy.hidden = false;
-    document.title = 'Haste · ' + viewId;
+    raw.href = rawUrl(viewId);
+    raw.hidden = false;
+    document.title = 'Paste · ' + viewId;
     status.textContent = 'Loading paste…';
     try {
-      const paste = await readPreview(await fetchPaste(viewId));
-      view.textContent = paste.text;
-      status.textContent = paste.truncated ? 'Showing the first 2 MiB. Raw opens the full paste.' : '';
+      const response = await fetchPaste(viewId);
+      const { blob, truncated } = await previewOf(response);
+      for (const part of slicePanes(blob, response.headers.get('X-Haste-Panes'))) {
+        mountPane(await part.text(), false);
+      }
+      status.textContent = truncated ? 'Showing the first 2 MiB. Raw opens the full paste.' : '';
     } catch (error) {
       status.textContent = error.message;
     }
@@ -82,65 +164,49 @@
     try {
       const response = await fetchPaste(editId);
       const original = await response.blob();
-      input.value = await original.text();
-      attached = original;
-      status.textContent = 'Editing a copy. Save to give it a new link.';
+      for (const part of slicePanes(original, response.headers.get('X-Haste-Panes'))) {
+        addDraft(await part.text(), part);
+      }
+      status.textContent = 'Editing a copy.';
     } catch (error) {
       status.textContent = error.message;
     } finally {
       busy = false;
+      const first = drafts[0]?.input ?? addDraft();
       updateEditor();
-      input.focus();
-    }
-  }
-
-  async function attach(file) {
-    if (!file || busy) return;
-    if (!file.size || file.size > maxBytes) {
-      status.textContent = file.size ? 'Text files can be up to 250 MiB.' : 'The file is empty.';
-      return;
-    }
-    busy = true;
-    updateEditor();
-    try {
-      if (file.size <= previewBytes) {
-        const text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
-        if (text.includes('\0')) throw new Error('Binary file');
-        input.value = text;
-      } else {
-        input.value = '';
-      }
-      attached = file;
-      status.textContent = file.size <= previewBytes
-        ? file.name
-        : file.name + ' is attached. Save to upload the full file.';
-    } catch {
-      status.textContent = 'Choose a UTF-8 text file.';
-    } finally {
-      busy = false;
-      updateEditor();
-      input.focus();
+      first.focus();
     }
   }
 
   async function publish() {
     if (save.disabled) return;
+    const parts = drafts.map(pane => pane.attached ?? new Blob([pane.input.value]));
+    const file = parts.length === 1 ? parts[0] : new Blob(parts.flatMap((part, index) => index ? [separator, part] : [part]));
+    if (file.size > maxBytes) {
+      status.textContent = 'The combined paste is over 250 MiB.';
+      return;
+    }
+    const headers = new Headers({ Authorization: 'Bearer ' + token });
+    let body = file;
+    if (parts.length > 1) {
+      body = new FormData();
+      body.append('file', file, 'paste.txt');
+      body.append('panes', parts.map(part => part.size).join(','));
+    } else {
+      headers.set('Content-Type', 'text/plain; charset=utf-8');
+    }
     busy = true;
     updateEditor();
     status.textContent = 'Saving…';
     try {
-      const response = await fetch(adminApi, {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'text/plain; charset=utf-8' },
-        body: attached ?? input.value,
-      });
+      const response = await fetch(adminApi, { method: 'POST', headers, body });
       if (response.status === 401) {
         if (localStorage.getItem('admin_token') === token) localStorage.removeItem('admin_token');
         status.textContent = 'Your session expired. Copy your draft before signing in again.';
         return;
       }
       const paste = await response.json().catch(() => null);
-      if (!response.ok || !paste || !validId.test(paste.id)) {
+      if (!response.ok || !paste || !idPattern.test(paste.id)) {
         throw new Error(paste?.error ?? 'Could not save the paste.');
       }
       location.assign('/h/' + paste.id);
@@ -152,74 +218,33 @@
     }
   }
 
-  save.addEventListener('click', publish);
-  create.addEventListener('click', () => {
-    if (!viewId && (input.value || attached) && !confirm('Discard this draft and start a new paste?')) return;
-    location.assign(editorUrl);
-  });
-  raw.addEventListener('click', () => location.assign(rawUrl(viewId)));
-  edit.addEventListener('click', () => location.assign(editorUrl + '?edit=' + viewId));
-  copy.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(location.origin + '/h/' + viewId);
-      status.textContent = 'Link copied.';
-    } catch {
-      status.textContent = 'Copy the link from the address bar.';
-    }
-  });
-
   document.addEventListener('keydown', event => {
     if (event.repeat || event.isComposing) return;
-    const key = event.key.toLowerCase();
     let action;
-    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && key === 's') {
+    if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.code === 'KeyS') {
       action = save;
-    } else if (event.altKey && !event.metaKey && !event.ctrlKey) {
-      if (event.shiftKey && event.code === 'KeyE') action = edit;
-      if (!event.shiftKey && event.code === 'KeyN') action = create;
-      if (!event.shiftKey && event.code === 'KeyR') action = raw;
+    } else if (event.altKey && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
+      if (event.code === 'KeyQ') action = split;
+      if (event.code === 'KeyN') action = create;
+      if (event.code === 'KeyR') action = raw;
     }
-    if (action && !action.disabled) {
+    if (action && !action.hidden && !action.disabled) {
       event.preventDefault();
       action.click();
     }
   });
 
-  manage.hidden = !token;
   if (viewId) {
     openViewer();
     return;
   }
-
-  input.hidden = openFile.hidden = false;
-  input.addEventListener('input', () => {
-    attached = null;
-    status.textContent = '';
-    updateEditor();
+  save.hidden = create.hidden = split.hidden = false;
+  save.addEventListener('click', publish);
+  split.addEventListener('click', () => addDraft().focus());
+  create.addEventListener('click', () => {
+    if (hasDraft() && !confirm('Discard this draft and start a new paste?')) return;
+    location.assign(editorUrl);
   });
-  openFile.addEventListener('click', () => filePicker.click());
-  filePicker.addEventListener('change', () => {
-    attach(filePicker.files[0]);
-    filePicker.value = '';
-  });
-  const hasFiles = event => event.dataTransfer?.types.includes('Files');
-  surface.addEventListener('dragover', event => {
-    if (!hasFiles(event)) return;
-    event.preventDefault();
-    surface.classList.add('dragging');
-  });
-  surface.addEventListener('dragleave', () => surface.classList.remove('dragging'));
-  surface.addEventListener('drop', event => {
-    surface.classList.remove('dragging');
-    if (!hasFiles(event)) return;
-    event.preventDefault();
-    if (event.dataTransfer.files.length !== 1) {
-      status.textContent = 'Drop one text file at a time.';
-      return;
-    }
-    attach(event.dataTransfer.files[0]);
-  });
-  updateEditor();
   if (editId) loadDraft();
-  else input.focus();
+  else addDraft().focus();
 })();
