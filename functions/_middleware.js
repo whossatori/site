@@ -19,5 +19,5 @@ export async function onRequest({ request, next }) {
     const value = request.headers.get(name);
     if (value && !deletion) headers.set(name, value);
   }
-  return fetch(origin + path, { method: request.method, headers, redirect: 'error', cache: 'no-store' });
+  return fetch(origin + path, { method: request.method, headers, redirect: 'error' });
 }
