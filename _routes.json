@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/i/*", "/x/*"],
+  "include": ["/i/*", "/x/*", "/h/*"],
   "exclude": []
 }
