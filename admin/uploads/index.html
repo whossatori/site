@@ -109,9 +109,11 @@
 
     if (!files.length) { grid.innerHTML = '<div class="empty">no uploads yet</div>'; return; }
 
-    grid.innerHTML = files.map(f => `
+    grid.innerHTML = files.map(f => {
+      const link = f.link ?? imageLink(f.id);
+      return `
       <div class="file-item" id="file-${f.id}">
-        <img class="file-thumb" src="https://satos.cc/x/${f.id}" alt="${f.original}" loading="lazy"
+        <img class="file-thumb" src="${link}" alt="${f.original}" loading="lazy"
              onerror="this.style.display='none'">
         <div class="file-info">
           <div class="file-name">${f.original}</div>
@@ -121,15 +123,20 @@
           </div>
         </div>
         <div class="btn-row">
-          <a class="btn" href="https://satos.cc/x/${f.id}" target="_blank">open</a>
-          <button class="btn" onclick="copyLink('${f.id}')">copy</button>
+          <a class="btn" href="${link}" target="_blank">open</a>
+          <button class="btn" data-link="${link}" onclick="copyLink(this.dataset.link)">copy</button>
           <button class="btn danger" onclick="deleteFile('${f.id}')">delete</button>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
-  function copyLink(id) {
-    navigator.clipboard.writeText(`https://satos.cc/x/${id}`);
+  function imageLink(id) {
+    return `https://satos.cc/${id.length === 3 ? 'i' : 'x'}/${id}`;
+  }
+
+  function copyLink(link) {
+    navigator.clipboard.writeText(link);
   }
 
   async function deleteFile(id) {

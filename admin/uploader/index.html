@@ -104,7 +104,7 @@
   </div>
 
   <div class="section">
-    <div class="section-label">upload keys</div>
+    <div class="section-label">owner upload key</div>
     <div class="card">
       <div class="new-key-row">
         <input type="text" id="new-key-name" placeholder="key name (e.g. chatterino, john)">
@@ -147,10 +147,10 @@
     <div class="section-label">manual upload</div>
     <div class="card">
       <div class="upload-zone" id="upload-zone">
-        <input type="file" id="upload-input" accept=".png,.jpg,.jpeg,.gif,.webp,.avif,.jfif">
+        <input type="file" id="upload-input" accept=".png,.jpg,.jpeg,.mp4,.gif,.webp,.avif,.jfif">
         <div class="upload-hint">
           drag & drop or <strong>click to browse</strong>
-          <small>png, jpg, jpeg, gif, webp, avif, jfif · max 50MB</small>
+          <small>png, jpg, jpeg, mp4, gif, webp, avif, jfif · max 250 MB</small>
         </div>
       </div>
       <div class="upload-result" id="upload-result">
@@ -250,6 +250,11 @@
     if (!name) { status.textContent = 'enter a name first'; status.className = 'status err'; return; }
     const res  = await fetch(`${API}/admin/upload/keys`, { method: 'POST', headers: authH(), body: JSON.stringify({ name }) });
     const data = await res.json();
+    if (!res.ok) {
+      status.textContent = data.error || 'could not create upload key';
+      status.className = 'status err';
+      return;
+    }
     document.getElementById('new-key-name').value = '';
     status.textContent = ''; status.className = 'status';
     showKeyModal(data.key);
@@ -294,8 +299,12 @@
 
   async function doUpload(file) {
     if (!file) return;
-    upStatus.textContent = 'uploading...'; upStatus.className = 'status';
     result.classList.remove('visible');
+    if (file.size > 250 * 1024 * 1024) {
+      upStatus.textContent = 'file too large (max 250 MB)'; upStatus.className = 'status err';
+      return;
+    }
+    upStatus.textContent = 'uploading...'; upStatus.className = 'status';
     const form = new FormData();
     form.append('file', file);
     try {
