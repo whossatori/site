@@ -25,6 +25,11 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const narrow = matchMedia('(max-width: 700px)');
   const paneGap = parseFloat(getComputedStyle(panes).getPropertyValue('--pane-gap')) || 8;
+  const resizeGrip = document.createElement('div');
+  resizeGrip.className = 'resize-grip';
+  resizeGrip.hidden = true;
+  resizeGrip.setAttribute('aria-hidden', 'true');
+  document.body.append(resizeGrip);
   const drafts = [];
   let busy = false;
   let pointer = null;
@@ -130,9 +135,54 @@
     return group;
   }
 
-  function arrangeDefaultLayout() {
+  function restoreSplitLayout(layout, leaves) {
+    if (!layout) return false;
+    const markers = layout.split(',');
+    if (markers.length !== leaves.length * 2 - 1) return false;
+    let slots = 1;
+    for (const marker of markers) {
+      if (slots === 0 || !/^(?:0|-?[1-9]\d{0,3})$/.test(marker)) return false;
+      slots += marker === '0' ? -1 : 1;
+    }
+    if (slots) return false;
+
+    const stack = [];
+    for (const marker of markers.reverse().map(Number)) {
+      if (!marker) {
+        stack.push(leaves.pop());
+      } else {
+        const group = makeSplitGroup(marker < 0);
+        group.style.setProperty('--split-position', Math.abs(marker) / 100 + '%');
+        group.append(stack.pop(), stack.pop());
+        stack.push(group);
+      }
+    }
+    panes.replaceChildren(stack[0]);
+    return true;
+  }
+
+  function saveSplitLayout() {
+    // Preorder tree: 0 marks a pane, with signed hundredths of a percent
+    // for each split. Stacked splits use negative values.
+    const pending = [panes.firstElementChild];
+    const markers = [];
+    while (pending.length) {
+      const node = pending.pop();
+      if (!node.classList.contains('split-group')) {
+        markers.push(0);
+        continue;
+      }
+      const percent = parseFloat(node.style.getPropertyValue('--split-position')) || 50;
+      const ratio = Math.max(1, Math.min(9999, Math.round(percent * 100)));
+      markers.push(node.classList.contains('stacked') ? -ratio : ratio);
+      pending.push(node.lastElementChild, node.firstElementChild);
+    }
+    return markers.join(',');
+  }
+
+  function arrangeLayout(layout) {
     const leaves = [...panes.children];
-    if (leaves.length > 1) {
+    if (leaves.length > 1 && !restoreSplitLayout(layout, leaves)) {
       const rows = [];
       for (let index = 0; index < leaves.length; index += 2) {
         const first = leaves[index];
@@ -216,7 +266,9 @@
   }
 
   function dividerAt(point) {
-    if (!point || !panes.contains(document.elementFromPoint(point.x, point.y))) return null;
+    if (!point) return null;
+    const hit = document.elementFromPoint(point.x, point.y);
+    if (hit !== resizeGrip && !panes.contains(hit)) return null;
     let nearest = null;
     for (const group of panes.querySelectorAll('.split-group')) {
       const box = group.getBoundingClientRect();
@@ -233,6 +285,23 @@
   function setResizeCursor(target) {
     if (target) panes.dataset.resizeAxis = target.axis;
     else delete panes.dataset.resizeAxis;
+    resizeGrip.hidden = !target || Boolean(resizeDrag);
+    if (resizeGrip.hidden) return;
+    // The temporary hit target sits above the native scrollbar while Alt
+    // is held, so starting at a pane edge can still resize its divider.
+    const { group, axis, center } = target;
+    const box = group.getBoundingClientRect();
+    const visible = panes.getBoundingClientRect();
+    const across = axis === 'columns';
+    const left = Math.max(visible.left, across ? center - 12 : box.left);
+    const right = Math.min(visible.right, across ? center + 12 : box.right);
+    const top = Math.max(visible.top, across ? box.top : center - 12);
+    const bottom = Math.min(visible.bottom, across ? box.bottom : center + 12);
+    resizeGrip.dataset.axis = axis;
+    Object.assign(resizeGrip.style, {
+      left: left + 'px', top: top + 'px', width: Math.max(0, right - left) + 'px',
+      height: Math.max(0, bottom - top) + 'px',
+    });
   }
 
   function resizeAt(point) {
@@ -257,7 +326,7 @@
     if (drag && panes.hasPointerCapture(drag.pointerId)) panes.releasePointerCapture(drag.pointerId);
   }
 
-  panes.addEventListener('pointerdown', event => {
+  document.addEventListener('pointerdown', event => {
     if (!event.altKey || event.button !== 0 || event.pointerType === 'touch' || busy || removeDialog.open) return;
     const point = { x: event.clientX, y: event.clientY };
     const divider = dividerAt(point);
@@ -420,12 +489,12 @@
     }
   }
 
-  function slicePanes(blob, layout) {
+  function slicePanes(blob, layout, keepMissing = false) {
     if (!layout) return [blob];
     const panesInFile = [];
     let offset = 0;
     for (const length of layout.split(',').map(Number)) {
-      if (offset > blob.size || (offset === blob.size && length)) break;
+      if (!keepMissing && (offset > blob.size || (offset === blob.size && length))) break;
       panesInFile.push(blob.slice(offset, offset + length));
       offset += length + separator.length;
     }
@@ -440,10 +509,11 @@
     try {
       const response = await fetchPaste(viewId);
       const { blob, truncated } = await previewOf(response);
-      for (const part of slicePanes(blob, response.headers.get('X-Haste-Panes'))) {
+      const layout = response.headers.get('X-Haste-Layout');
+      for (const part of slicePanes(blob, response.headers.get('X-Haste-Panes'), truncated && Boolean(layout))) {
         panes.append(makePane(await part.text(), false).pane);
       }
-      arrangeDefaultLayout();
+      arrangeLayout(layout);
       status.textContent = truncated ? 'Showing the first 2 MiB. Raw opens the full paste.' : '';
     } catch (error) {
       status.textContent = error.message;
@@ -460,7 +530,7 @@
       for (const part of slicePanes(original, response.headers.get('X-Haste-Panes'))) {
         addDraft(await part.text(), part);
       }
-      arrangeDefaultLayout();
+      arrangeLayout(response.headers.get('X-Haste-Layout'));
       status.textContent = 'Editing a copy.';
     } catch (error) {
       status.textContent = error.message;
@@ -486,6 +556,7 @@
       body = new FormData();
       body.append('file', file, 'paste.txt');
       body.append('panes', parts.map(part => part.size).join(','));
+      body.append('layout', saveSplitLayout());
     } else {
       headers.set('Content-Type', 'text/plain; charset=utf-8');
     }
