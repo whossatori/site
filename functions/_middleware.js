@@ -19,5 +19,9 @@ export async function onRequest({ request, next }) {
     const value = request.headers.get(name);
     if (value && !deletion) headers.set(name, value);
   }
-  return fetch(origin + path, { method: request.method, headers, redirect: 'error' });
+  const response = await fetch(origin + path, { method: request.method, headers, redirect: 'manual' });
+  if (response.status >= 300 && response.status < 400) {
+    return new Response('Unexpected response from the image server', { status: 502 });
+  }
+  return response;
 }
