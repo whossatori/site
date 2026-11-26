@@ -15,18 +15,28 @@
   }
 
   const panes = document.getElementById('panes');
+  const workspace = panes.closest('.workspace');
   const status = document.getElementById('status');
   const save = document.getElementById('save');
   const create = document.getElementById('new');
   const split = document.getElementById('split');
   const raw = document.getElementById('raw');
+  const removeDialog = document.getElementById('remove-pane');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const drafts = [];
   let busy = false;
+  let pointer = null;
+  let focusedDraft = null;
+  let pendingRemoval = null;
 
   const rawUrl = id => '/h/r/' + id;
 
+  function paneHasContent(pane) {
+    return Boolean(pane.attached?.size || pane.input.value);
+  }
+
   function hasDraft() {
-    return drafts.some(pane => pane.attached?.size || pane.input.value);
+    return drafts.some(paneHasContent);
   }
 
   function updateEditor() {
@@ -37,7 +47,20 @@
     }
   }
 
-  function mountPane(text, editable) {
+  document.addEventListener('pointermove', event => {
+    if (event.pointerType === 'touch') return;
+    pointer = { x: event.clientX, y: event.clientY };
+    const revealDistance = workspace.classList.contains('toolbar-open') ? 54 : 16;
+    workspace.classList.toggle('toolbar-open', pointer.y <= revealDistance);
+  });
+  function clearPointer() {
+    pointer = null;
+    workspace.classList.remove('toolbar-open');
+  }
+  document.documentElement.addEventListener('pointerleave', clearPointer);
+  window.addEventListener('blur', clearPointer);
+
+  function makePane(text, editable) {
     const pane = document.createElement('div');
     const field = document.createElement(editable ? 'textarea' : 'pre');
     pane.className = 'pane';
@@ -51,14 +74,35 @@
       field.tabIndex = 0;
     }
     pane.append(field);
-    panes.append(pane);
+    pane.addEventListener('pointerenter', event => {
+      if (!busy && !removeDialog.open && !event.buttons && event.pointerType !== 'touch') {
+        field.focus({ preventScroll: true });
+      }
+    });
     return { pane, field };
   }
 
-  function addDraft(text = '', attached = null) {
-    const { pane, field: input } = mountPane(text, true);
-    const draft = { input, attached, loading: false };
-    drafts.push(draft);
+  function labelDrafts() {
+    drafts.forEach((draft, index) => draft.input.setAttribute('aria-label', 'Paste pane ' + (index + 1)));
+  }
+
+  function addDraft(text = '', attached = null, placement = null) {
+    const { pane, field: input } = makePane(text, true);
+    const draft = { pane, input, attached, loading: false };
+    if (placement) {
+      const { target, stacked, before } = placement;
+      const group = document.createElement('div');
+      group.className = stacked ? 'split-group stacked' : 'split-group';
+      target.pane.replaceWith(group);
+      if (before) group.append(pane, target.pane);
+      else group.append(target.pane, pane);
+      drafts.splice(drafts.indexOf(target) + (before ? 0 : 1), 0, draft);
+    } else {
+      panes.append(pane);
+      drafts.push(draft);
+    }
+    labelDrafts();
+    input.addEventListener('focus', () => { focusedDraft = draft; });
     input.addEventListener('input', () => {
       draft.attached = null;
       status.textContent = '';
@@ -78,7 +122,89 @@
       else status.textContent = 'Drop one text file per pane.';
     });
     updateEditor();
-    return input;
+    return draft;
+  }
+
+  function hoveredDraft() {
+    if (!pointer) return null;
+    const pane = document.elementFromPoint(pointer.x, pointer.y)?.closest('.pane');
+    return drafts.find(draft => draft.pane === pane) ?? null;
+  }
+
+  function splitPlacement(target, point) {
+    if (!target) return null;
+    const box = target.pane.getBoundingClientRect();
+    const canSplitAcross = innerWidth > 700 && box.width >= 420;
+    const canStack = box.height >= 260;
+    if (!canSplitAcross && !canStack) return null;
+    const x = point ? (point.x - box.left) / box.width - .5 : 0;
+    const y = point ? (point.y - box.top) / box.height - .5 : 0;
+    const stacked = canStack && (!canSplitAcross || Math.abs(y) > Math.abs(x));
+    return { target, stacked, before: (stacked ? y : x) < 0 };
+  }
+
+  function animateOpen(pane, origin) {
+    if (reduceMotion.matches) return;
+    const box = pane.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    let from = 'scale(.985)';
+    let transformOrigin = 'center';
+    if (origin) {
+      const size = 20;
+      const x = origin.x - box.left - size / 2;
+      const y = origin.y - box.top - size / 2;
+      from = `translate(${x}px, ${y}px) scale(${size / box.width}, ${size / box.height})`;
+      transformOrigin = 'top left';
+    }
+    pane.classList.add('opening');
+    const animation = pane.animate([
+      { transform: from, transformOrigin, opacity: .45 },
+      { transform: 'none', transformOrigin, opacity: 1 },
+    ], { duration: 210, easing: 'cubic-bezier(.18,.76,.25,1)' });
+    const end = () => pane.classList.remove('opening');
+    animation.finished.then(end, end);
+  }
+
+  function openSplit() {
+    const hovered = hoveredDraft();
+    const target = hovered ?? focusedDraft;
+    const draft = addDraft('', null, splitPlacement(target, hovered ? pointer : null));
+    draft.input.focus();
+    animateOpen(draft.pane, pointer);
+  }
+
+  function discardDraft(draft) {
+    const index = drafts.indexOf(draft);
+    if (index < 0 || drafts.length === 1) return;
+    const group = draft.pane.parentElement;
+    if (group.classList.contains('split-group')) {
+      const sibling = [...group.children].find(child => child !== draft.pane);
+      group.replaceWith(sibling);
+    } else {
+      draft.pane.remove();
+    }
+    drafts.splice(index, 1);
+    labelDrafts();
+    status.textContent = '';
+    updateEditor();
+    const next = hoveredDraft() ?? drafts[Math.min(index, drafts.length - 1)];
+    next.input.focus({ preventScroll: true });
+  }
+
+  function askToDiscard(draft) {
+    if (!paneHasContent(draft)) {
+      discardDraft(draft);
+      return;
+    }
+    pendingRemoval = draft;
+    const { x, y } = pointer;
+    removeDialog.returnValue = '';
+    removeDialog.showModal();
+    const margin = 12;
+    const left = Math.max(margin, Math.min(x + margin, innerWidth - removeDialog.offsetWidth - margin));
+    const top = Math.max(margin, Math.min(y + margin, innerHeight - removeDialog.offsetHeight - margin));
+    removeDialog.style.left = left + 'px';
+    removeDialog.style.top = top + 'px';
   }
 
   async function attach(draft, file) {
@@ -149,7 +275,7 @@
       const response = await fetchPaste(viewId);
       const { blob, truncated } = await previewOf(response);
       for (const part of slicePanes(blob, response.headers.get('X-Haste-Panes'))) {
-        mountPane(await part.text(), false);
+        panes.append(makePane(await part.text(), false).pane);
       }
       status.textContent = truncated ? 'Showing the first 2 MiB. Raw opens the full paste.' : '';
     } catch (error) {
@@ -172,9 +298,9 @@
       status.textContent = error.message;
     } finally {
       busy = false;
-      const first = drafts[0]?.input ?? addDraft();
+      const first = drafts[0] ?? addDraft();
       updateEditor();
-      first.focus();
+      first.input.focus();
     }
   }
 
@@ -219,7 +345,7 @@
   }
 
   document.addEventListener('keydown', event => {
-    if (event.repeat || event.isComposing) return;
+    if (event.repeat || event.isComposing || removeDialog.open) return;
     let action;
     if ((event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey && event.code === 'KeyS') {
       action = save;
@@ -227,6 +353,14 @@
       if (event.code === 'KeyQ') action = split;
       if (event.code === 'KeyN') action = create;
       if (event.code === 'KeyR') action = raw;
+      if (event.code === 'KeyE' && !viewId && !busy && drafts.length > 1) {
+        const draft = hoveredDraft();
+        if (draft && !draft.loading) {
+          event.preventDefault();
+          askToDiscard(draft);
+        }
+        return;
+      }
     }
     if (action && !action.hidden && !action.disabled) {
       event.preventDefault();
@@ -240,11 +374,22 @@
   }
   save.hidden = create.hidden = split.hidden = false;
   save.addEventListener('click', publish);
-  split.addEventListener('click', () => addDraft().focus());
+  split.addEventListener('click', openSplit);
+  removeDialog.addEventListener('close', () => {
+    const draft = pendingRemoval;
+    pendingRemoval = null;
+    if (!draft) return;
+    if (removeDialog.returnValue === 'remove') discardDraft(draft);
+    else draft.input.focus({ preventScroll: true });
+  });
   create.addEventListener('click', () => {
     if (hasDraft() && !confirm('Discard this draft and start a new paste?')) return;
     location.assign(editorUrl);
   });
   if (editId) loadDraft();
-  else addDraft().focus();
+  else {
+    const draft = addDraft();
+    draft.input.focus();
+    animateOpen(draft.pane, null);
+  }
 })();

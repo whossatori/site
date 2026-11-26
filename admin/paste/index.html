@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paste · satori</title>
   <link rel="preload" href="/assets/haste/snow.webp" as="image">
-  <link rel="stylesheet" href="/assets/haste/editor.css?v=panes">
-  <script src="/assets/haste/editor.js?v=panes" defer></script>
+  <link rel="stylesheet" href="/assets/haste/editor.css?v=hover">
+  <script src="/assets/haste/editor.js?v=hover" defer></script>
 </head>
 <body>
   <main class="workspace">
@@ -19,6 +19,16 @@
     <section class="panes" id="panes" aria-label="Paste"></section>
     <p id="status" role="status"></p>
   </main>
+  <dialog id="remove-pane" aria-labelledby="remove-title" aria-describedby="remove-description">
+    <form method="dialog">
+      <p id="remove-title">Remove this pane?</p>
+      <p id="remove-description">Its draft will be discarded.</p>
+      <div class="dialog-actions">
+        <button value="cancel" autofocus>Cancel</button>
+        <button value="remove" class="remove">Remove</button>
+      </div>
+    </form>
+  </dialog>
   <noscript>Enable JavaScript to open the editor.</noscript>
 </body>
 </html>
